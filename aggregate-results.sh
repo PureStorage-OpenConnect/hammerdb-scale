@@ -197,7 +197,7 @@ for JOB in ${JOBS}; do
 
     # Method 1: Extract everything between "-{phase}-" and the last dash (namespace)
     # This handles targets with multiple dashes like "sql-bench-01"
-    TARGET=$(echo "${JOB}" | sed -E "s/.*-${PHASE}-(.+)-[^-]+$/\1/")"
+    TARGET=$(echo "${JOB}" | sed -E "s/.*-${PHASE}-(.+)-[^-]+$/\1/")
 
     # Get job status
     JOB_STATUS=$(kubectl get job "${JOB}" -n "${NAMESPACE}" \
