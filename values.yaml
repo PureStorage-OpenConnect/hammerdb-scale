@@ -1,0 +1,127 @@
+# ============================================
+# TEST CONFIGURATION
+# ============================================
+testRun:
+  id: "test-001"
+  phase: "build"  # Options: "build" or "load"
+  benchmark: "tprocc"  # Options: "tprocc" or "tproch"
+
+# ============================================
+# DATABASE TARGETS (What to test)
+# ============================================
+targets:
+  - name: sql-server-01
+    type: mssql
+    host: "sqlserver1.example.com"
+    username: sa
+    password: "YourSecurePassword"
+    tprocc:
+      databaseName: tpcc
+    tproch:
+      databaseName: tpch
+
+  - name: sql-server-02
+    type: mssql
+    host: "sqlserver2.example.com"
+    username: sa
+    password: "YourSecurePassword"
+    tprocc:
+      databaseName: tpcc
+    tproch:
+      databaseName: tpch
+
+# ============================================
+# TEST PARAMETERS (How to test)
+# ============================================
+hammerdb:
+  connection:
+    tcp: true
+    port: 1433
+    azure: false
+    authentication: sql
+    odbc_driver: "ODBC Driver 18 for SQL Server"
+    linux_odbc: "ODBC Driver 18 for SQL Server"
+    encrypt_connection: true
+    trust_server_cert: true
+
+  tprocc:
+    warehouses: 100
+    build_num_vu: 16        # Virtual users for BUILD phase
+    load_num_vu: 8          # Virtual users for LOAD phase
+    use_bcp: false
+    driver: timed
+    rampup: 2
+    duration: 5
+    total_iterations: 10000000
+    allwarehouse: true
+    checkpoint: true
+    timeprofile: false
+
+  tproch:
+    scaleFactor: 100
+    buildThreads: 8       # Data generation parallelism (IMPORTANT)
+    build_num_vu: 1        # HammerDB VU orchestrator (keep at 1)
+    load_num_vu: 1         # Query execution concurrency (IMPORTANT - 1=Power, 4+=Throughput)
+    totalQuerysets: 1       # Number of query set runs
+    maxdop: 8              # SQL Server Max Degree of Parallelism
+    useClusteredColumnstore: false
+
+# ============================================
+# INFRASTRUCTURE
+# ============================================
+global:
+  image:
+    repository: sillidata/hammerdb-scale
+    tag: latest
+    pullPolicy: Always  # Always pull to get latest image changes
+
+  resources:
+    requests:
+      memory: "4Gi"
+      cpu: "2"
+    limits:
+      memory: "8Gi"
+      cpu: "4"
+
+databases:
+  mssql:
+    driver: mssqls
+
+# ============================================
+# PURE STORAGE METRICS COLLECTION (Optional)
+# ============================================
+# Enable to collect storage performance metrics during test runs
+#
+# IMPORTANT: Only the FIRST target in the targets list will collect metrics
+# to avoid duplicate API calls and rate limiting issues. All other targets
+# will skip metrics collection.
+#
+pureStorage:
+  enabled: false                    # Set to true to enable metrics collection
+  host: "192.168.1.100"            # FlashArray management IP/hostname
+  apiToken: "your-api-token-here"  # API token for authentication (get from Pure Storage array)
+  volume: ""                        # Optional: specific volume to monitor (leave empty for array-level metrics)
+  pollInterval: 5                   # Metrics polling interval in seconds
+  verifySSL: false                  # Set to true to verify SSL certificates
+  apiVersion: "2.4"                 # Pure Storage REST API version
+  # duration: 600                   # Optional: Override collection duration in seconds (useful for TPC-H)
+
+  # Single-Collector Architecture:
+  # - Only the FIRST target (index 0) runs the metrics collector
+  # - This prevents duplicate API calls (e.g., 8 targets = 8x API load)
+  # - All targets' workload is visible in array-level metrics
+  # - Scales efficiently regardless of target count
+  #
+  # The metrics collector will run for the same duration as your load test:
+  # - For TPC-C: Automatically uses DURATION + RAMPUP from test config
+  # - For TPC-H: Estimates 10 minutes per queryset (can override with 'duration' above)
+  #
+  # Metrics collected:
+  # - Write Latency (µs)
+  # - Read Latency (µs)
+  # - Write IOPS
+  # - Read IOPS
+  # - Write Bandwidth (MB/s)
+  # - Read Bandwidth (MB/s)
+  # - Average Read Block Size (KB)
+  # - Average Write Block Size (KB)

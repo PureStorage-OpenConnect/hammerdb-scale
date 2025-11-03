@@ -1,0 +1,187 @@
+{{- range $index, $target := .Values.targets }}
+{{- $tproccConfig := include "hammerdb-scale-test.tprocc-config" (dict "root" $ "target" $target) | fromYaml }}
+{{- $tprochConfig := include "hammerdb-scale-test.tproch-config" (dict "root" $ "target" $target) | fromYaml }}
+{{- $connConfig := include "hammerdb-scale-test.connection-config" (dict "root" $ "target" $target) | fromYaml }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "hammerdb-scale-test.fullname" $ }}-{{ $.Values.testRun.phase }}-{{ $target.name }}-{{ $.Values.testRun.id }}
+  labels:
+    {{- include "hammerdb-scale-test.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: worker
+    hammerdb.io/test-run: {{ $.Values.testRun.id | quote }}
+    hammerdb.io/phase: {{ $.Values.testRun.phase | quote }}
+    hammerdb.io/target: {{ $target.name | quote }}
+    hammerdb.io/benchmark: {{ $.Values.testRun.benchmark | quote }}
+    hammerdb.io/database-type: {{ $target.type | quote }}
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        {{- include "hammerdb-scale-test.selectorLabels" $ | nindent 8 }}
+        app.kubernetes.io/component: worker
+        hammerdb.io/test-run: {{ $.Values.testRun.id | quote }}
+        hammerdb.io/phase: {{ $.Values.testRun.phase | quote }}
+        hammerdb.io/target: {{ $target.name | quote }}
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: hammerdb
+        image: "{{ $.Values.global.image.repository }}:{{ $.Values.global.image.tag }}"
+        imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
+        env:
+        # Test identification
+        - name: TEST_RUN_ID
+          value: {{ $.Values.testRun.id | quote }}
+        - name: TARGET_NAME
+          value: {{ $target.name | quote }}
+        - name: TARGET_INDEX
+          value: {{ $index | quote }}
+        - name: RUN_MODE
+          value: {{ $.Values.testRun.phase | quote }}
+        - name: BENCHMARK
+          value: {{ $.Values.testRun.benchmark | quote }}
+        - name: DATABASE_TYPE
+          value: {{ $target.type | quote }}
+
+        # Database connection
+        - name: USERNAME
+          value: {{ $target.username | quote }}
+        - name: PASSWORD
+          value: {{ $target.password | quote }}
+        - name: HOST
+          value: {{ $target.host | quote }}
+
+        # Global settings
+        - name: USE_BCP
+          value: {{ $tproccConfig.use_bcp | quote }}
+        - name: TMP
+          value: /tmp
+        - name: TMPDIR
+          value: /tmp
+
+        {{- if eq $target.type "mssql" }}
+        # SQL Server specific connection config
+        - name: SQL_SERVER_HOST
+          value: {{ $target.host | quote }}
+        - name: MSSQLS_TCP
+          value: {{ $connConfig.tcp | quote }}
+        - name: MSSQLS_PORT
+          value: {{ $connConfig.port | quote }}
+        - name: MSSQLS_AUTHENTICATION
+          value: {{ $connConfig.authentication | quote }}
+        - name: MSSQLS_AZURE
+          value: {{ $connConfig.azure | quote }}
+        - name: MSSQLS_LINUX_ODBC
+          value: {{ $connConfig.linux_odbc | quote }}
+        - name: MSSQLS_ODBC_DRIVER
+          value: {{ $connConfig.odbc_driver | quote }}
+        - name: MSSQLS_ENCRYPT_CONNECTION
+          value: {{ $connConfig.encrypt_connection | quote }}
+        - name: MSSQLS_TRUST_SERVER_CERT
+          value: {{ $connConfig.trust_server_cert | quote }}
+        {{- end }}
+
+        {{- if eq $.Values.testRun.benchmark "tprocc" }}
+        # TPC-C Configuration (from merged config)
+        - name: TPROCC_DATABASE_NAME
+          value: {{ $target.tprocc.databaseName | quote }}
+        - name: TPROCC_DRIVER
+          value: {{ include "hammerdb-scale-test.dbDriver" $target.type | quote }}
+        - name: TPROCC_BUILD_VIRTUAL_USERS
+          value: {{ $tproccConfig.build_num_vu | quote }}
+        - name: WAREHOUSES
+          value: {{ $tproccConfig.warehouses | quote }}
+        - name: TPROCC_DRIVER_TYPE
+          value: {{ $tproccConfig.driver | quote }}
+        - name: TPROCC_ALLWAREHOUSE
+          value: {{ $tproccConfig.allwarehouse | quote }}
+        - name: VIRTUAL_USERS
+          value: {{ $tproccConfig.load_num_vu | quote }}
+        - name: RAMPUP
+          value: {{ $tproccConfig.rampup | quote }}
+        - name: DURATION
+          value: {{ $tproccConfig.duration | quote }}
+        - name: TOTAL_ITERATIONS
+          value: {{ $tproccConfig.total_iterations | quote }}
+        - name: TPROCC_LOG_TO_TEMP
+          value: "0"
+        - name: TPROCC_USE_TRANSACTION_COUNTER
+          value: "true"
+        - name: TPROCC_CHECKPOINT
+          value: {{ $tproccConfig.checkpoint | quote }}
+        - name: TPROCC_TIMEPROFILE
+          value: {{ $tproccConfig.timeprofile | quote }}
+        {{- end }}
+
+        {{- if eq $.Values.testRun.benchmark "tproch" }}
+        # TPC-H Configuration (from merged config)
+        - name: TPROCH_DATABASE_NAME
+          value: {{ $target.tproch.databaseName | quote }}
+        - name: TPROCH_DRIVER
+          value: {{ include "hammerdb-scale-test.dbDriver" $target.type | quote }}
+        - name: TPROCH_SCALE_FACTOR
+          value: {{ $tprochConfig.scaleFactor | quote }}
+        - name: TPROCH_BUILD_THREADS
+          value: {{ $tprochConfig.buildThreads | quote }}
+        - name: TPROCH_BUILD_VIRTUAL_USERS
+          value: {{ $tprochConfig.build_num_vu | quote }}
+        - name: TPROCH_VIRTUAL_USERS
+          value: {{ $tprochConfig.load_num_vu | quote }}
+        {{- if eq $target.type "mssql" }}
+        - name: TPROCH_USE_CLUSTERED_COLUMNSTORE
+          value: {{ $tprochConfig.useClusteredColumnstore | quote }}
+        - name: TPROCH_MAXDOP
+          value: {{ $tprochConfig.maxdop | quote }}
+        {{- end }}
+        - name: TPROCH_TOTAL_QUERYSETS
+          value: {{ $tprochConfig.totalQuerysets | quote }}
+        - name: TPROCH_LOG_TO_TEMP
+          value: "1"
+        {{- end }}
+
+        {{- if $.Values.pureStorage.enabled }}
+        # Pure Storage metrics collection
+        - name: PURE_ENABLED
+          value: "true"
+        - name: PURE_COLLECT_METRICS
+          # Only first target (index 0) collects metrics to avoid duplicate API calls
+          value: {{ if eq $index 0 }}"true"{{ else }}"false"{{ end }}
+        - name: PURE_HOST
+          value: {{ $.Values.pureStorage.host | quote }}
+        - name: PURE_API_TOKEN
+          value: {{ $.Values.pureStorage.apiToken | quote }}
+        {{- if $.Values.pureStorage.volume }}
+        - name: PURE_VOLUME
+          value: {{ $.Values.pureStorage.volume | quote }}
+        {{- end }}
+        - name: PURE_INTERVAL
+          value: {{ $.Values.pureStorage.pollInterval | quote }}
+        - name: PURE_NO_VERIFY_SSL
+          value: {{ ternary "false" "true" $.Values.pureStorage.verifySSL | quote }}
+        - name: PURE_API_VERSION
+          value: {{ $.Values.pureStorage.apiVersion | quote }}
+        - name: PURE_OUTPUT
+          value: "/tmp/pure_metrics.json"
+        {{- if $.Values.pureStorage.duration }}
+        - name: PURE_DURATION
+          value: {{ $.Values.pureStorage.duration | quote }}
+        {{- end }}
+        {{- end }}
+
+        resources:
+          {{- toYaml $.Values.global.resources | nindent 10 }}
+
+        volumeMounts:
+        - name: scripts
+          mountPath: /opt/HammerDB-5.0/scripts
+
+      volumes:
+      - name: scripts
+        configMap:
+          name: {{ include "hammerdb-scale-test.fullname" $ }}-scripts-{{ $target.type }}
+          defaultMode: 0755  # Make scripts executable
+{{- end }}
