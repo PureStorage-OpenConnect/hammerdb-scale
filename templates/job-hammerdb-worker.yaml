@@ -1,7 +1,14 @@
+{{- if not (has .Values.testRun.phase (list "build" "load")) -}}
+  {{- fail "testRun.phase must be 'build' or 'load'" -}}
+{{- end -}}
+{{- if not (has .Values.testRun.benchmark (list "tprocc" "tproch")) -}}
+  {{- fail "testRun.benchmark must be 'tprocc' or 'tproch'" -}}
+{{- end -}}
 {{- range $index, $target := .Values.targets }}
 {{- $tproccConfig := include "hammerdb-scale-test.tprocc-config" (dict "root" $ "target" $target) | fromYaml }}
 {{- $tprochConfig := include "hammerdb-scale-test.tproch-config" (dict "root" $ "target" $target) | fromYaml }}
 {{- $connConfig := include "hammerdb-scale-test.connection-config" (dict "root" $ "target" $target) | fromYaml }}
+{{- $oracleConfig := include "hammerdb-scale-test.oracle-config" (dict "root" $ "target" $target) | fromYaml }}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -85,10 +92,38 @@ spec:
           value: {{ $connConfig.trust_server_cert | quote }}
         {{- end }}
 
+        {{- if eq $target.type "oracle" }}
+        # Oracle specific connection config (merged from defaults and target overrides)
+        - name: ORACLE_SERVICE
+          value: {{ $oracleConfig.service }}
+        - name: ORACLE_PORT
+          value: {{ $oracleConfig.port | quote }}
+        {{- if $oracleConfig.sid }}
+        - name: ORACLE_SID
+          value: {{ $oracleConfig.sid }}
+        {{- end }}
+        - name: ORACLE_TABLESPACE
+          value: {{ $oracleConfig.tablespace }}
+        - name: ORACLE_TEMP_TABLESPACE
+          value: {{ $oracleConfig.tempTablespace }}
+        - name: TPROCC_USER
+          value: {{ $oracleConfig.tproccUser }}
+        - name: TPROCC_PASSWORD
+          value: {{ $target.password | quote }}
+        - name: TPROCH_USER
+          value: {{ $oracleConfig.tprochUser }}
+        - name: TPROCH_PASSWORD
+          value: {{ $target.password | quote }}
+        - name: TPROCH_DEGREE_OF_PARALLEL
+          value: {{ $oracleConfig.degreeOfParallel | quote }}
+        {{- end }}
+
         {{- if eq $.Values.testRun.benchmark "tprocc" }}
         # TPC-C Configuration (from merged config)
+        {{- if eq $target.type "mssql" }}
         - name: TPROCC_DATABASE_NAME
           value: {{ $target.tprocc.databaseName | quote }}
+        {{- end }}
         - name: TPROCC_DRIVER
           value: {{ include "hammerdb-scale-test.dbDriver" $target.type | quote }}
         - name: TPROCC_BUILD_VIRTUAL_USERS
@@ -119,8 +154,10 @@ spec:
 
         {{- if eq $.Values.testRun.benchmark "tproch" }}
         # TPC-H Configuration (from merged config)
+        {{- if eq $target.type "mssql" }}
         - name: TPROCH_DATABASE_NAME
           value: {{ $target.tproch.databaseName | quote }}
+        {{- end }}
         - name: TPROCH_DRIVER
           value: {{ include "hammerdb-scale-test.dbDriver" $target.type | quote }}
         - name: TPROCH_SCALE_FACTOR

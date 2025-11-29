@@ -74,6 +74,9 @@ class PureStorageCollector:
         logger.info(f"API Version: {self.api_version}")
         logger.info(f"Poll Interval: {self.poll_interval}s")
 
+        if not self.verify_ssl:
+            logger.warning("SSL certificate verification is DISABLED - not recommended for production")
+
     def login(self) -> bool:
         """
         Login to Pure Storage array and get session token.

@@ -322,11 +322,23 @@ for JOB in ${JOBS}; do
             oracle)
                 # Oracle specific patterns
                 # TPC-C: Look for Oracle TPM/NOPM patterns
-                TPM_VALUE=$(grep -oP 'TPM:\s*(\d+)' "${LOG_FILE}" | grep -oP '\d+' | tail -1 || echo "0")
-                NOPM_VALUE=$(grep -oP 'NOPM:\s*(\d+)' "${LOG_FILE}" | grep -oP '\d+' | tail -1 || echo "0")
+                # Oracle HammerDB outputs: "12500 Oracle TPM" or "System achieved 12500 NOPM from 125000 Oracle TPM"
+                TPM_VALUE=$(grep -oP '(\d+)\s+(?:Oracle\s+)?TPM' "${LOG_FILE}" | grep -oP '\d+' | tail -1 || echo "0")
+                NOPM_VALUE=$(grep -oP '(\d+)\s+NOPM' "${LOG_FILE}" | grep -oP '\d+' | tail -1 || echo "0")
 
-                # TPC-H: QphH pattern
-                QPHH_VALUE=$(grep -oP 'QphH:\s+([0-9]+\.?[0-9]*)' "${LOG_FILE}" | grep -oP ':\s+\K[0-9]+\.?[0-9]*' | tail -1 || echo "0")
+                # Alternative patterns for Oracle
+                if [ "$TPM_VALUE" == "0" ]; then
+                    TPM_VALUE=$(grep -i "system achieved" "${LOG_FILE}" | grep -oP 'from\s+(\d+)' | grep -oP '\d+' | tail -1 || echo "0")
+                fi
+                if [ "$NOPM_VALUE" == "0" ]; then
+                    NOPM_VALUE=$(grep -i "system achieved" "${LOG_FILE}" | grep -oP 'achieved\s+(\d+)' | grep -oP '\d+' | tail -1 || echo "0")
+                fi
+
+                # TPC-H: QphH pattern (with or without scale factor)
+                QPHH_VALUE=$(grep -oP 'QphH@\d+:\s+([0-9]+\.?[0-9]*)' "${LOG_FILE}" | grep -oP ':\s+\K[0-9]+\.?[0-9]*' | tail -1 || echo "0")
+                if [ "$QPHH_VALUE" == "0" ] || [ -z "$QPHH_VALUE" ]; then
+                    QPHH_VALUE=$(grep -oP 'QphH:\s+([0-9]+\.?[0-9]*)' "${LOG_FILE}" | grep -oP ':\s+\K[0-9]+\.?[0-9]*' | tail -1 || echo "0")
+                fi
                 ;;
 
             mysql)

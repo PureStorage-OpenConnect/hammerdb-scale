@@ -84,6 +84,10 @@ diset tpcc mssqls_duration $duration
 diset tpcc mssqls_allwarehouse true
 diset tpcc mssqls_count_ware $warehouses
 
+# Disable keying and thinking time for maximum storage stress testing
+# This runs transactions back-to-back without simulated human delays
+diset tpcc mssqls_keyandthink false
+
 # Set checkpoint and timeprofile if they are true
 if {$tprocc_checkpoint eq "true"} {
     diset tpcc mssqls_checkpoint true

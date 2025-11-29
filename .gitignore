@@ -1,0 +1,62 @@
+# HammerDB Scale - Git Ignore File
+# Protects against accidentally committing sensitive information
+
+# Local configuration files with real credentials
+values-local.yaml
+values-prod.yaml
+values-production.yaml
+values-dev.yaml
+values-staging.yaml
+*-local.yaml
+*-secrets.yaml
+
+# Test results and logs
+results/
+*.log
+*.json
+
+# Kubernetes secrets
+secrets/
+*.secret
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+
+# Editor and IDE files
+.vscode/
+.claude/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Build artifacts
+*.tar.gz
+*.zip
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

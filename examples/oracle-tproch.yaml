@@ -1,0 +1,52 @@
+# Oracle TPC-H Test Scenario
+# Minimal configuration for quick testing
+
+testRun:
+  id: "test-oracle-tproch"
+  phase: "build"  # Will be overridden by test script
+  benchmark: "tproch"
+
+targets:
+  - name: oracle-server-01
+    type: oracle
+    host: "oracle-server.example.com"
+    username: system
+    password: "changeme"
+
+hammerdb:
+  tproch:
+    scaleFactor: 1          # Minimal 1GB for testing
+    buildThreads: 2         # Fast build
+    build_num_vu: 1         # HammerDB orchestrator
+    load_num_vu: 1          # Power run (single stream)
+    totalQuerysets: 1       # Single query set
+
+databases:
+  oracle:
+    driver: oracle
+    port: 1521
+    service: "ORCL"
+    tablespace: "TPCH"
+    tempTablespace: "TEMP"
+    tprocc:
+      user: "tpcc"
+    tproch:
+      user: "tpch"
+      degreeOfParallel: 2
+
+global:
+  image:
+    repository: localhost/hammerdb-scale-oracle-test
+    tag: latest
+    pullPolicy: Never
+
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "1"
+    limits:
+      memory: "4Gi"
+      cpu: "2"
+
+pureStorage:
+  enabled: false

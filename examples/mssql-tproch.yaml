@@ -1,0 +1,55 @@
+# SQL Server TPC-H Test Scenario
+# Minimal configuration for quick testing
+
+testRun:
+  id: "test-mssql-tproch"
+  phase: "build"  # Will be overridden by test script
+  benchmark: "tproch"
+
+targets:
+  - name: sql-server-01
+    type: mssql
+    host: "sql-server.example.com"
+    username: sa
+    password: "changeme"
+    tprocc:
+      databaseName: tpcc
+    tproch:
+      databaseName: tpch
+
+hammerdb:
+  connection:
+    tcp: true
+    port: 1433
+    azure: false
+    authentication: sql
+    odbc_driver: "ODBC Driver 18 for SQL Server"
+    linux_odbc: "ODBC Driver 18 for SQL Server"
+    encrypt_connection: true
+    trust_server_cert: true
+
+  tproch:
+    scaleFactor: 1          # Minimal 1GB for testing
+    buildThreads: 2         # Fast build
+    build_num_vu: 1         # HammerDB orchestrator
+    load_num_vu: 1          # Power run (single stream)
+    totalQuerysets: 1       # Single query set
+    maxdop: 2
+    useClusteredColumnstore: false
+
+global:
+  image:
+    repository: localhost/hammerdb-scale-test
+    tag: latest
+    pullPolicy: Never
+
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "1"
+    limits:
+      memory: "4Gi"
+      cpu: "2"
+
+pureStorage:
+  enabled: false

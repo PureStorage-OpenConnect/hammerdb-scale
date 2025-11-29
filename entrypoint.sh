@@ -55,8 +55,40 @@ case "$DATABASE_TYPE" in
         ;;
     oracle)
         log "Database: Oracle"
-        log "ERROR: Oracle support not yet implemented"
-        exit 1
+        # Check if Oracle Instant Client is installed
+        if [ ! -d "/opt/oracle/instantclient_21_11" ]; then
+            log ""
+            log "============================================================"
+            log "ERROR: Oracle Instant Client not found!"
+            log "============================================================"
+            log ""
+            log "You are trying to run an Oracle benchmark but the Oracle"
+            log "client libraries are not installed in this container."
+            log ""
+            log "Oracle Instant Client cannot be included in the public"
+            log "hammerdb-scale image due to Oracle's licensing restrictions."
+            log ""
+            log "TO FIX: Build the Oracle extension image:"
+            log ""
+            log "  1. Clone the repository:"
+            log "     git clone https://github.com/sillidata/hammerdb-scale"
+            log ""
+            log "  2. Build the Oracle image (downloads Oracle client from Oracle):"
+            log "     docker build -f Dockerfile.oracle -t myregistry/hammerdb-scale-oracle:latest ."
+            log ""
+            log "  3. Push to your registry:"
+            log "     docker push myregistry/hammerdb-scale-oracle:latest"
+            log ""
+            log "  4. Update your values.yaml:"
+            log "     global:"
+            log "       image:"
+            log "         repository: myregistry/hammerdb-scale-oracle"
+            log ""
+            log "For detailed instructions, see ORACLE-SETUP.md"
+            log "============================================================"
+            log ""
+            exit 1
+        fi
         ;;
     mysql)
         log "Database: MySQL/MariaDB"
@@ -82,6 +114,43 @@ if [[ "$DATABASE_TYPE" == "mssql" ]]; then
                 ;;
             parse)
                 SCRIPT_NAME="generic_tprocc_result.tcl"
+                ;;
+            *)
+                log "ERROR: Unknown RUN_MODE: '$RUN_MODE' for benchmark '$BENCHMARK'"
+                exit 1
+                ;;
+        esac
+    elif [[ "$BENCHMARK" == "tproch" ]]; then
+        case "$RUN_MODE" in
+            build)
+                SCRIPT_NAME="build_schema_tproch.tcl"
+                ;;
+            load)
+                SCRIPT_NAME="load_test_tproch.tcl"
+                ;;
+            parse)
+                SCRIPT_NAME="parse_output_tproch.tcl"
+                ;;
+            *)
+                log "ERROR: Unknown RUN_MODE: '$RUN_MODE' for benchmark '$BENCHMARK'"
+                exit 1
+                ;;
+        esac
+    else
+        log "ERROR: Unknown BENCHMARK: '$BENCHMARK'. Supported: tprocc, tproch"
+        exit 1
+    fi
+elif [[ "$DATABASE_TYPE" == "oracle" ]]; then
+    if [[ "$BENCHMARK" == "tprocc" ]]; then
+        case "$RUN_MODE" in
+            build)
+                SCRIPT_NAME="build_schema_tprocc.tcl"
+                ;;
+            load)
+                SCRIPT_NAME="load_test_tprocc.tcl"
+                ;;
+            parse)
+                SCRIPT_NAME="parse_output_tprocc.tcl"
                 ;;
             *)
                 log "ERROR: Unknown RUN_MODE: '$RUN_MODE' for benchmark '$BENCHMARK'"
