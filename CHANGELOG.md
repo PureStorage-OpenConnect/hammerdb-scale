@@ -2,10 +2,29 @@
 
 All notable changes to the hammerdb-scale project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.1.0] - 2025-11-27
 
-## [1.0.0] - TBD
+Oracle Database support and storage testing optimizations.
+
+### Added
+- Oracle Database support (TPC-C and TPC-H benchmarks)
+- Dockerfile.oracle for building Oracle-enabled images
+- Oracle-specific TCL scripts for schema build, load test, and result parsing
+- Helpful error message when Oracle client is missing from container
+- Input validation for phase and benchmark values in Helm templates
+
+### Changed
+- SQL Server TPC-C now uses `keyandthink false` for maximum storage stress testing
+- ConfigMaps are now conditional based on target database types
+- deploy-test.sh now properly checks helm install exit codes
+
+### Fixed
+- deploy-test.sh variable quoting for test IDs with special characters
+- Added SSL warning when Pure Storage metrics collector runs without verification
+
+---
+
+## [1.0.0] - 2024-12-01
 
 Initial release of HammerDB Scale - Kubernetes orchestrator for parallel database performance testing.
 

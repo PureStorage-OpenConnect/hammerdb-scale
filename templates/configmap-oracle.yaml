@@ -1,21 +1,20 @@
-{{- $hasMssql := false -}}
+{{- $hasOracle := false -}}
 {{- range .Values.targets -}}
-  {{- if eq .type "mssql" -}}
-    {{- $hasMssql = true -}}
+  {{- if eq .type "oracle" -}}
+    {{- $hasOracle = true -}}
   {{- end -}}
 {{- end -}}
-{{- if $hasMssql }}
-# ConfigMap for SQL Server (MSSQL) Scripts
+{{- if $hasOracle }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "hammerdb-scale-test.fullname" . }}-scripts-mssql
+  name: {{ include "hammerdb-scale-test.fullname" . }}-scripts-oracle
   labels:
     {{- include "hammerdb-scale-test.labels" . | nindent 4 }}
-    hammerdb.io/database-type: mssql
+    hammerdb.io/database-type: oracle
 data:
   # HammerDB TCL scripts
-  {{- range $path, $_ := .Files.Glob "scripts/mssql/*.tcl" }}
+  {{- range $path, $_ := .Files.Glob "scripts/oracle/*.tcl" }}
   {{ base $path }}: |-
 {{ $.Files.Get $path | indent 4 }}
   {{- end }}

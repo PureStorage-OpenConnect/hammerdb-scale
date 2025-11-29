@@ -1,0 +1,59 @@
+# SQL Server TPC-C Test Scenario
+# Minimal configuration for quick testing
+
+testRun:
+  id: "test-mssql-tprocc"
+  phase: "build"  # Will be overridden by test script
+  benchmark: "tprocc"
+
+targets:
+  - name: sql-server-01
+    type: mssql
+    host: "sql-server.example.com"
+    username: sa
+    password: "changeme"
+    tprocc:
+      databaseName: tpcc
+    tproch:
+      databaseName: tpch
+
+hammerdb:
+  connection:
+    tcp: true
+    port: 1433
+    azure: false
+    authentication: sql
+    odbc_driver: "ODBC Driver 18 for SQL Server"
+    linux_odbc: "ODBC Driver 18 for SQL Server"
+    encrypt_connection: true
+    trust_server_cert: true
+
+  tprocc:
+    warehouses: 1           # Minimal for testing
+    build_num_vu: 2         # Fast build
+    load_num_vu: 2          # Minimal load
+    use_bcp: false
+    driver: timed
+    rampup: 1               # 1 minute ramp
+    duration: 1             # 1 minute test
+    total_iterations: 10000000
+    allwarehouse: true
+    checkpoint: false       # Skip checkpoint for speed
+    timeprofile: false
+
+global:
+  image:
+    repository: localhost/hammerdb-scale-test
+    tag: latest
+    pullPolicy: Never       # Use local image
+
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "1"
+    limits:
+      memory: "4Gi"
+      cpu: "2"
+
+pureStorage:
+  enabled: false

@@ -128,12 +128,17 @@ echo "Namespace:  ${NAMESPACE}"
 echo "=========================================="
 echo ""
 
-helm install ${PHASE}-${TEST_ID} ${CHART_PATH} \
-    --namespace ${NAMESPACE} \
+if ! helm install "${PHASE}-${TEST_ID}" "${CHART_PATH}" \
+    --namespace "${NAMESPACE}" \
     --create-namespace \
     --set testRun.id="${TEST_ID}" \
     --set testRun.phase="${PHASE}" \
-    --set testRun.benchmark="${BENCHMARK}"
+    --set testRun.benchmark="${BENCHMARK}"; then
+    echo ""
+    echo "ERROR: Helm installation failed"
+    echo "Check the error message above for details"
+    exit 1
+fi
 
 echo ""
 echo "=========================================="

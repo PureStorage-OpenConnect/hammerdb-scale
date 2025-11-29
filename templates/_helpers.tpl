@@ -99,3 +99,56 @@ Usage: include "hammerdb-scale-test.connection-config" (dict "root" $ "target" .
 {{- $merged := merge (deepCopy $target) $global -}}
 {{- toYaml $merged -}}
 {{- end }}
+
+{{/*
+Get merged Oracle configuration for a target
+Merges databases.oracle defaults with target-specific Oracle overrides
+Usage: include "hammerdb-scale-test.oracle-config" (dict "root" $ "target" .)
+Returns: service, tablespace, tempTablespace, tproccUser, tprochUser, degreeOfParallel
+*/}}
+{{- define "hammerdb-scale-test.oracle-config" -}}
+{{- $oracleDefaults := .root.Values.databases.oracle | default dict -}}
+{{- $target := .target -}}
+
+{{/* Service name or SID */}}
+service: {{ $target.oracleService | default $oracleDefaults.service | default "ORCL" | quote }}
+{{- if $target.oracleSid }}
+sid: {{ $target.oracleSid | quote }}
+{{- end }}
+
+{{/* Tablespaces */}}
+tablespace: {{ $target.oracleTablespace | default $oracleDefaults.tablespace | default "USERS" | quote }}
+tempTablespace: {{ $target.oracleTempTablespace | default $oracleDefaults.tempTablespace | default "TEMP" | quote }}
+port: {{ $target.oraclePort | default $oracleDefaults.port | default 1521 }}
+
+{{/* TPC-C user */}}
+{{- if $target.tprocc }}
+tproccUser: {{ $target.tprocc.user | default (($oracleDefaults.tprocc | default dict).user) | default "tpcc" | quote }}
+{{- else }}
+tproccUser: {{ (($oracleDefaults.tprocc | default dict).user) | default "tpcc" | quote }}
+{{- end }}
+
+{{/* TPC-H user and parallelism */}}
+{{- if $target.tproch }}
+tprochUser: {{ $target.tproch.user | default (($oracleDefaults.tproch | default dict).user) | default "tpch" | quote }}
+degreeOfParallel: {{ $target.tproch.degreeOfParallel | default (($oracleDefaults.tproch | default dict).degreeOfParallel) | default 8 }}
+{{- else }}
+tprochUser: {{ (($oracleDefaults.tproch | default dict).user) | default "tpch" | quote }}
+degreeOfParallel: {{ (($oracleDefaults.tproch | default dict).degreeOfParallel) | default 8 }}
+{{- end }}
+{{- end }}
+
+{{/*
+Get list of database types used in targets
+Returns a JSON object with a "types" array containing unique database types
+Usage: include "hammerdb-scale-test.usedDatabaseTypes" . | fromJson
+*/}}
+{{- define "hammerdb-scale-test.usedDatabaseTypes" -}}
+{{- $types := list -}}
+{{- range .Values.targets -}}
+  {{- if not (has .type $types) -}}
+    {{- $types = append $types .type -}}
+  {{- end -}}
+{{- end -}}
+{{- dict "types" $types | toJson -}}
+{{- end }}

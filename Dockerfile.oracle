@@ -1,0 +1,63 @@
+# Oracle Extension Image
+# Extends the public hammerdb-scale image with Oracle Instant Client
+#
+# LICENSING: Oracle Instant Client is proprietary software. By building this
+# image, you download Oracle software directly from Oracle's servers and agree
+# to Oracle's license terms: https://www.oracle.com/downloads/licenses/instant-client-lic.html
+#
+# BUILD:
+#   docker build -f Dockerfile.oracle -t myregistry/hammerdb-scale-oracle:latest .
+#   docker push myregistry/hammerdb-scale-oracle:latest
+#
+# The base image (sillidata/hammerdb-scale) includes HammerDB 5.0 and drivers for
+# SQL Server, PostgreSQL, and MySQL. This extension adds Oracle support.
+
+FROM sillidata/hammerdb-scale:latest
+
+LABEL maintainer="hammerdb-scale"
+LABEL description="HammerDB Scale - Oracle Extension"
+LABEL oracle.instantclient.version="21.11.0.0.0"
+
+# Install Oracle Instant Client dependencies and download from Oracle
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        wget \
+        unzip \
+        libaio1t64 && \
+    # Create symlink for libaio compatibility (Ubuntu 24.04)
+    ln -s /usr/lib/x86_64-linux-gnu/libaio.so.1t64 /usr/lib/x86_64-linux-gnu/libaio.so.1 && \
+    # Download Oracle Instant Client from Oracle's servers
+    mkdir -p /opt/oracle && \
+    cd /opt/oracle && \
+    echo "Downloading Oracle Instant Client 21.11 from Oracle..." && \
+    wget --progress=dot:mega \
+        https://download.oracle.com/otn_software/linux/instantclient/2111000/instantclient-basic-linux.x64-21.11.0.0.0dbru.zip && \
+    wget --progress=dot:mega \
+        https://download.oracle.com/otn_software/linux/instantclient/2111000/instantclient-sqlplus-linux.x64-21.11.0.0.0dbru.zip && \
+    unzip -q instantclient-basic-linux.x64-21.11.0.0.0dbru.zip && \
+    unzip -q instantclient-sqlplus-linux.x64-21.11.0.0.0dbru.zip && \
+    rm *.zip && \
+    # Configure library paths
+    echo '/opt/oracle/instantclient_21_11' > /etc/ld.so.conf.d/oracle.conf && \
+    ldconfig && \
+    # Cleanup
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set Oracle environment variables
+ENV ORACLE_HOME=/opt/oracle/instantclient_21_11
+ENV LD_LIBRARY_PATH=$ORACLE_HOME:$LD_LIBRARY_PATH
+ENV PATH=$ORACLE_HOME:$PATH
+ENV TNS_ADMIN=$ORACLE_HOME/network/admin
+
+# Create lib subdirectory symlinks for HammerDB's Oratcl compatibility
+RUN mkdir -p $ORACLE_HOME/lib && \
+    cd $ORACLE_HOME && \
+    for lib in *.so*; do \
+        [ -f "$lib" ] && ln -sf $ORACLE_HOME/$lib $ORACLE_HOME/lib/$lib; \
+    done && \
+    ln -sf $ORACLE_HOME/libclntsh.so.21.1 $ORACLE_HOME/libclntsh.so && \
+    ln -sf $ORACLE_HOME/libclntsh.so.21.1 $ORACLE_HOME/lib/libclntsh.so
+
+# Verify Oracle client is working
+RUN sqlplus -v && echo "Oracle Instant Client ready"

@@ -9,26 +9,19 @@ testRun:
 # ============================================
 # DATABASE TARGETS (What to test)
 # ============================================
+# Example configuration - UPDATE THESE FOR YOUR ENVIRONMENT
 targets:
-  - name: sql-server-01
-    type: mssql
-    host: "sqlserver1.example.com"
-    username: sa
-    password: "YourSecurePassword"
-    tprocc:
-      databaseName: tpcc
-    tproch:
-      databaseName: tpch
+  - name: oracle-bench-01
+    type: oracle
+    host: "oracle-db1.example.com"
+    username: system
+    password: "changeme"
 
-  - name: sql-server-02
-    type: mssql
-    host: "sqlserver2.example.com"
-    username: sa
-    password: "YourSecurePassword"
-    tprocc:
-      databaseName: tpcc
-    tproch:
-      databaseName: tpch
+  - name: oracle-bench-02
+    type: oracle
+    host: "oracle-db2.example.com"
+    username: system
+    password: "changeme"
 
 # ============================================
 # TEST PARAMETERS (How to test)
@@ -46,19 +39,19 @@ hammerdb:
 
   tprocc:
     warehouses: 100
-    build_num_vu: 16        # Virtual users for BUILD phase
-    load_num_vu: 8          # Virtual users for LOAD phase
+    build_num_vu: 32        # Virtual users for BUILD phase
+    load_num_vu: 32          # Virtual users for LOAD phase
     use_bcp: false
     driver: timed
-    rampup: 2
-    duration: 5
+    rampup: 5
+    duration: 10
     total_iterations: 10000000
     allwarehouse: true
     checkpoint: true
     timeprofile: false
 
   tproch:
-    scaleFactor: 100
+    scaleFactor: 10
     buildThreads: 8       # Data generation parallelism (IMPORTANT)
     build_num_vu: 1        # HammerDB VU orchestrator (keep at 1)
     load_num_vu: 1         # Query execution concurrency (IMPORTANT - 1=Power, 4+=Throughput)
@@ -71,6 +64,7 @@ hammerdb:
 # ============================================
 global:
   image:
+    # Public base image (or your own registry)
     repository: sillidata/hammerdb-scale
     tag: latest
     pullPolicy: Always  # Always pull to get latest image changes
@@ -78,14 +72,51 @@ global:
   resources:
     requests:
       memory: "4Gi"
-      cpu: "2"
+      cpu: "4"
     limits:
       memory: "8Gi"
-      cpu: "4"
+      cpu: "8"
 
 databases:
   mssql:
     driver: mssqls
+    port: 1433
+
+  oracle:
+    driver: oracle
+    port: 1521
+    service: "ORCL"                    # Default Oracle service name
+    tablespace: "TPCC"                 # Default data tablespace
+    tempTablespace: "TEMP"             # Default temp tablespace
+    tprocc:
+      user: "tpcc"                     # Default TPC-C schema user
+    tproch:
+      user: "tpch"                     # Default TPC-H schema user
+      degreeOfParallel: 8              # Default Oracle query parallelism
+
+# ============================================
+# ORACLE CONFIGURATION NOTES
+# ============================================
+# The targets above use defaults from databases.oracle section.
+# You can override any setting per-target by adding the specific field:
+#
+# Override Examples:
+#   - name: oracle-custom
+#     type: oracle
+#     host: "custom-oracle.local"
+#     username: system
+#     password: "changeme"
+#     oracleService: "PROD"              # Override: different service name
+#     oracleTablespace: "TPCC_DATA"      # Override: different tablespace
+#     oracleTempTablespace: "TEMP2"      # Override: different temp tablespace
+#     tprocc:
+#       user: "tpcc_prod"                # Override: different TPC-C user
+#     tproch:
+#       user: "tpch_prod"                # Override: different TPC-H user
+#       degreeOfParallel: 16             # Override: more parallelism
+#
+# Or use SID instead of Service:
+#   oracleSid: "ORCL"                    # Use SID (mutually exclusive with oracleService)
 
 # ============================================
 # PURE STORAGE METRICS COLLECTION (Optional)
@@ -98,7 +129,7 @@ databases:
 #
 pureStorage:
   enabled: false                    # Set to true to enable metrics collection
-  host: "192.168.1.100"            # FlashArray management IP/hostname
+  host: "flasharray.example.com"   # FlashArray management IP/hostname
   apiToken: "your-api-token-here"  # API token for authentication (get from Pure Storage array)
   volume: ""                        # Optional: specific volume to monitor (leave empty for array-level metrics)
   pollInterval: 5                   # Metrics polling interval in seconds
