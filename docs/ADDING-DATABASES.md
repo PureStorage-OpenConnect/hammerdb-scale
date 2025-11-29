@@ -4,10 +4,10 @@ This guide explains how to extend HammerDB Scale to support additional database 
 
 ## Currently Supported
 - **SQL Server** (fully implemented)
+- **Oracle Database** (fully implemented)
 
 ## Planned Support
 - **PostgreSQL** (structure ready, implementation needed)
-- **Oracle** (structure ready, implementation needed)
 - **MySQL/MariaDB** (structure ready, implementation needed)
 
 ## Architecture Overview
