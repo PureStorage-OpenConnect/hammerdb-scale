@@ -38,7 +38,11 @@ def clean_database(
             oracle_cfg = t.get("oracle", {})
             tprocc_cfg = oracle_cfg.get("tprocc", {})
             tproch_cfg = oracle_cfg.get("tproch", {})
-            schema_user = tprocc_cfg.get("user", "TPCC") if benchmark == "tprocc" else tproch_cfg.get("user", "tpch")
+            schema_user = (
+                tprocc_cfg.get("user", "TPCC")
+                if benchmark == "tprocc"
+                else tproch_cfg.get("user", "tpch")
+            )
 
             if benchmark == "tprocc":
                 stmts = get_tprocc_drop_statements(schema_user)
@@ -76,8 +80,16 @@ def clean_database(
             oracle_cfg = t.get("oracle", {})
             tprocc_cfg = oracle_cfg.get("tprocc", {})
             tproch_cfg = oracle_cfg.get("tproch", {})
-            schema_user = tprocc_cfg.get("user", "TPCC") if benchmark == "tprocc" else tproch_cfg.get("user", "tpch")
-            schema_pass = tprocc_cfg.get("password", "") if benchmark == "tprocc" else tproch_cfg.get("password", "")
+            schema_user = (
+                tprocc_cfg.get("user", "TPCC")
+                if benchmark == "tprocc"
+                else tproch_cfg.get("user", "tpch")
+            )
+            schema_pass = (
+                tprocc_cfg.get("password", "")
+                if benchmark == "tprocc"
+                else tproch_cfg.get("password", "")
+            )
 
             if benchmark == "tprocc":
                 stmts = get_tprocc_drop_statements(schema_user)
@@ -140,7 +152,11 @@ def clean_database(
             if not typer.confirm("Proceed?"):
                 raise typer.Abort()
 
-        mssql_port = config.targets.defaults.mssql.port if config.targets.defaults.mssql else 1433
+        mssql_port = (
+            config.targets.defaults.mssql.port
+            if config.targets.defaults.mssql
+            else 1433
+        )
 
         for t in targets:
             tprocc_db = t.get("tprocc", {}).get("databaseName", "tpcc")

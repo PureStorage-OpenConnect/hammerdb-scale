@@ -6,7 +6,6 @@ import json
 from pathlib import Path
 
 from hammerdb_scale.constants import (
-    AmbiguousTestIdError,
     ConfigError,
     KubectlError,
     NoResultsError,
@@ -15,21 +14,25 @@ from hammerdb_scale.helm.deployer import run_kubectl, helm_list
 from hammerdb_scale.output import console
 
 
-def discover_jobs(
-    namespace: str, test_id: str, phase: str | None = None
-) -> list[dict]:
+def discover_jobs(namespace: str, test_id: str, phase: str | None = None) -> list[dict]:
     """Find all jobs for a given test run and optional phase."""
     selector = f"hammerdb.io/test-id={test_id}"
     if phase:
         selector += f",hammerdb.io/phase={phase}"
 
     try:
-        result = run_kubectl([
-            "get", "jobs",
-            "-n", namespace,
-            "-l", selector,
-            "-o", "json",
-        ])
+        result = run_kubectl(
+            [
+                "get",
+                "jobs",
+                "-n",
+                namespace,
+                "-l",
+                selector,
+                "-o",
+                "json",
+            ]
+        )
         data = json.loads(result.stdout)
         return data.get("items", [])
     except (KubectlError, json.JSONDecodeError):
@@ -86,6 +89,7 @@ def get_job_duration(job: dict) -> int | None:
         return None
 
     from datetime import datetime
+
     fmt = "%Y-%m-%dT%H:%M:%SZ"
     try:
         start_dt = datetime.strptime(start, fmt)
@@ -98,7 +102,9 @@ def get_job_duration(job: dict) -> int | None:
 def get_job_target_name(job: dict) -> str:
     """Extract target name from job labels."""
     labels = job.get("metadata", {}).get("labels", {})
-    return labels.get("hammerdb.io/target-name", labels.get("hammerdb.io/target", "unknown"))
+    return labels.get(
+        "hammerdb.io/target-name", labels.get("hammerdb.io/target", "unknown")
+    )
 
 
 def get_job_target_host(job: dict) -> str:
@@ -111,7 +117,6 @@ def get_job_database_type(job: dict) -> str:
     """Extract database type from job labels."""
     labels = job.get("metadata", {}).get("labels", {})
     return labels.get("hammerdb.io/database-type", "unknown")
-
 
 
 def resolve_test_id(
@@ -147,9 +152,7 @@ def resolve_test_id(
     if len(local_ids) > 1:
         return sorted(local_ids)[-1]
 
-    raise NoResultsError(
-        "No test runs found in K8s or local results directory."
-    )
+    raise NoResultsError("No test runs found in K8s or local results directory.")
 
 
 def _find_most_recent_k8s_test_id(namespace: str) -> str | None:
@@ -166,12 +169,18 @@ def _find_most_recent_k8s_test_id(namespace: str) -> str | None:
             if not release_name.startswith("hdb-"):
                 continue
             try:
-                result = run_kubectl([
-                    "get", "jobs",
-                    "-n", namespace,
-                    "-l", f"app.kubernetes.io/instance={release_name}",
-                    "-o", "json",
-                ])
+                result = run_kubectl(
+                    [
+                        "get",
+                        "jobs",
+                        "-n",
+                        namespace,
+                        "-l",
+                        f"app.kubernetes.io/instance={release_name}",
+                        "-o",
+                        "json",
+                    ]
+                )
                 data = json.loads(result.stdout)
                 items = data.get("items", [])
                 if items:

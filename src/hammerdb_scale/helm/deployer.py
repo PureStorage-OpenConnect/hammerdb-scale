@@ -30,8 +30,12 @@ def run_helm(
         )
     cmd = [str(helm)] + args
     result = subprocess.run(
-        cmd, capture_output=capture, text=True, timeout=timeout,
-        encoding="utf-8", errors="replace",
+        cmd,
+        capture_output=capture,
+        text=True,
+        timeout=timeout,
+        encoding="utf-8",
+        errors="replace",
     )
     if result.returncode != 0:
         raise HelmError(f"helm {' '.join(args)} failed:\n{result.stderr}")
@@ -49,8 +53,12 @@ def run_kubectl(
         )
     cmd = [str(kubectl)] + args
     result = subprocess.run(
-        cmd, capture_output=capture, text=True, timeout=timeout,
-        encoding="utf-8", errors="replace",
+        cmd,
+        capture_output=capture,
+        text=True,
+        timeout=timeout,
+        encoding="utf-8",
+        errors="replace",
     )
     if result.returncode != 0:
         raise KubectlError(f"kubectl {' '.join(args)} failed:\n{result.stderr}")
@@ -66,18 +74,20 @@ def helm_install(
 ) -> subprocess.CompletedProcess:
     """Install a Helm release with a generated values dict."""
     # Write values to temp file
-    tmp = tempfile.NamedTemporaryFile(
-        mode="w", suffix=".yaml", delete=False
-    )
+    tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False)
     try:
         yaml.dump(values_dict, tmp, default_flow_style=False, sort_keys=False)
         tmp.close()  # Close before helm reads (Windows compatibility)
 
         args = [
-            "install", release_name, chart_path,
-            "-n", namespace,
+            "install",
+            release_name,
+            chart_path,
+            "-n",
+            namespace,
             "--create-namespace",
-            "-f", tmp.name,
+            "-f",
+            tmp.name,
         ]
         if dry_run:
             args.extend(["--dry-run", "--debug"])
@@ -87,22 +97,24 @@ def helm_install(
         Path(tmp.name).unlink(missing_ok=True)
 
 
-def helm_uninstall(
-    release_name: str, namespace: str
-) -> subprocess.CompletedProcess:
+def helm_uninstall(release_name: str, namespace: str) -> subprocess.CompletedProcess:
     """Uninstall a Helm release."""
     return run_helm(["uninstall", release_name, "-n", namespace])
 
 
-def helm_list(
-    namespace: str, filter_pattern: str = "hdb-"
-) -> list[dict]:
+def helm_list(namespace: str, filter_pattern: str = "hdb-") -> list[dict]:
     """List Helm releases matching a pattern."""
-    result = run_helm([
-        "list", "-n", namespace,
-        "--filter", filter_pattern,
-        "-o", "json",
-    ])
+    result = run_helm(
+        [
+            "list",
+            "-n",
+            namespace,
+            "--filter",
+            filter_pattern,
+            "-o",
+            "json",
+        ]
+    )
     try:
         return json.loads(result.stdout) if result.stdout.strip() else []
     except json.JSONDecodeError:

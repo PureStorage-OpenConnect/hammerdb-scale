@@ -32,18 +32,14 @@ TPROCH_TABLES = [
 def get_tprocc_drop_statements(database_name: str) -> list[str]:
     """Generate DROP TABLE statements for MSSQL TPC-C tables."""
     stmts = [f"USE {database_name}"]
-    stmts.extend(
-        f"DROP TABLE IF EXISTS dbo.{table}" for table in TPROCC_TABLES
-    )
+    stmts.extend(f"DROP TABLE IF EXISTS dbo.{table}" for table in TPROCC_TABLES)
     return stmts
 
 
 def get_tproch_drop_statements(database_name: str) -> list[str]:
     """Generate DROP TABLE statements for MSSQL TPC-H tables."""
     stmts = [f"USE {database_name}"]
-    stmts.extend(
-        f"DROP TABLE IF EXISTS dbo.{table}" for table in TPROCH_TABLES
-    )
+    stmts.extend(f"DROP TABLE IF EXISTS dbo.{table}" for table in TPROCH_TABLES)
     return stmts
 
 

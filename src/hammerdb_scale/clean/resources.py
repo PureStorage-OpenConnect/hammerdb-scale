@@ -28,7 +28,8 @@ def clean_resources(
         # Find releases matching the test ID
         all_releases = helm_list(namespace)
         releases = [
-            r for r in all_releases
+            r
+            for r in all_releases
             if test_id in r.get("name", "") or test_id in str(r.get("app_version", ""))
         ]
         # Also try by hash pattern

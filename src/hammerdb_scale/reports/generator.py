@@ -24,8 +24,6 @@ def generate_scorecard(
     return _render_tprocc(summary, pure_metrics)
 
 
-
-
 _CSS = """\
 :root {
   --green: #10b981;
@@ -114,8 +112,6 @@ details pre { background: var(--gray-100); border-radius: var(--radius); padding
 """
 
 
-
-
 def _fmt_number(n: int | float | None) -> str:
     if n is None:
         return "-"
@@ -137,7 +133,12 @@ def _fmt_duration(seconds: int | float | None) -> str:
 
 def _escape(text: str) -> str:
     """Minimal HTML escaping."""
-    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
 
 
 def _latency_card_class(latency_us: float | None) -> str:
@@ -231,8 +232,6 @@ def _footer_html(summary: dict) -> str:
     )
 
 
-
-
 def _storage_charts_js(pure_metrics: dict | None) -> str:
     """Generate Chart.js code for storage performance graphs."""
     if not pure_metrics:
@@ -255,7 +254,7 @@ def _storage_charts_js(pure_metrics: dict | None) -> str:
     write_bw = [round(s.get("write_bandwidth_mbps", 0), 1) for s in samples]
     has_bw = any(v > 0 for v in read_bw) or any(v > 0 for v in write_bw)
 
-    html = f"""
+    html = """
 <div class="chart-container">
   <h3>Latency Over Time (\u00b5s)</h3>
   <canvas id="latencyChart"></canvas>
@@ -266,7 +265,7 @@ def _storage_charts_js(pure_metrics: dict | None) -> str:
 </div>"""
 
     if has_bw:
-        html += f"""
+        html += """
 <div class="chart-container">
   <h3>Bandwidth Over Time (MB/s)</h3>
   <canvas id="bwChart"></canvas>
@@ -330,8 +329,6 @@ def _storage_charts_js(pure_metrics: dict | None) -> str:
     return html
 
 
-
-
 def _storage_section_html(pure_metrics: dict | None) -> str:
     """Render the full Storage Performance section: cards, stats table, and charts."""
     if not pure_metrics:
@@ -368,8 +365,12 @@ def _storage_section_html(pure_metrics: dict | None) -> str:
     r_bw_max = summ.get("read_bandwidth_mbps_max", 0)
     has_bw = w_bw_avg > 0 or r_bw_avg > 0
 
-    avg_r_block = summ.get("avg_read_block_size_kb_avg") or summ.get("avg_read_block_size_kb", 0)
-    avg_w_block = summ.get("avg_write_block_size_kb_avg") or summ.get("avg_write_block_size_kb", 0)
+    avg_r_block = summ.get("avg_read_block_size_kb_avg") or summ.get(
+        "avg_read_block_size_kb", 0
+    )
+    avg_w_block = summ.get("avg_write_block_size_kb_avg") or summ.get(
+        "avg_write_block_size_kb", 0
+    )
 
     w_lat_class = _latency_card_class(w_lat_avg)
     r_lat_class = _latency_card_class(r_lat_avg)
@@ -506,8 +507,7 @@ def _render_tprocc(summary: dict, pure_metrics: dict | None) -> str:
         for t in targets
     ]
     bar_colors = [
-        "'#ef4444'" if t.get("status") == "failed" else "'#10b981'"
-        for t in targets
+        "'#ef4444'" if t.get("status") == "failed" else "'#10b981'" for t in targets
     ]
 
     nopm_values = [
@@ -531,7 +531,7 @@ new Chart(document.getElementById('tpmChart'), {{
     datasets: [{{
       label: 'TPM',
       data: {json.dumps(tpm_values)},
-      backgroundColor: [{', '.join(bar_colors)}],
+      backgroundColor: [{", ".join(bar_colors)}],
       borderRadius: 4
     }}]
   }},
@@ -549,7 +549,7 @@ new Chart(document.getElementById('nopmChart'), {{
     datasets: [{{
       label: 'NOPM',
       data: {json.dumps(nopm_values)},
-      backgroundColor: [{', '.join(bar_colors)}],
+      backgroundColor: [{", ".join(bar_colors)}],
       borderRadius: 4
     }}]
   }},
@@ -590,12 +590,9 @@ new Chart(document.getElementById('nopmChart'), {{
 </html>"""
 
 
-
-
 def _render_tproch(summary: dict, pure_metrics: dict | None) -> str:
     targets = summary.get("targets", [])
     agg = summary.get("aggregate", {})
-    cfg = summary.get("config", {})
     has_storage = pure_metrics is not None and bool(pure_metrics.get("raw_metrics"))
 
     avg_qphh = agg.get("avg_qphh", 0)
@@ -603,7 +600,8 @@ def _render_tproch(summary: dict, pure_metrics: dict | None) -> str:
     # Compute min/max QphH from individual targets
     qphh_vals = [
         t.get("tproch", {}).get("qphh", 0)
-        for t in targets if t.get("status") == "completed" and "tproch" in t
+        for t in targets
+        if t.get("status") == "completed" and "tproch" in t
     ]
     min_qphh = min(qphh_vals) if qphh_vals else 0
     max_qphh = max(qphh_vals) if qphh_vals else 0
@@ -612,7 +610,7 @@ def _render_tproch(summary: dict, pure_metrics: dict | None) -> str:
   <div class="card card-green"><div class="card-label">Avg QphH</div><div class="card-value">{_fmt_number(avg_qphh)}</div></div>
   <div class="card card-green"><div class="card-label">Max QphH</div><div class="card-value">{_fmt_number(max_qphh)}</div></div>
   <div class="card card-blue"><div class="card-label">Min QphH</div><div class="card-value">{_fmt_number(min_qphh)}</div></div>
-  <div class="card card-gray"><div class="card-label">Queries / Target</div><div class="card-value">{len(agg.get('per_query_avg', []))}</div></div>
+  <div class="card card-gray"><div class="card-label">Queries / Target</div><div class="card-value">{len(agg.get("per_query_avg", []))}</div></div>
 </div>"""
 
     # Per-target table
@@ -674,8 +672,7 @@ def _render_tproch(summary: dict, pure_metrics: dict | None) -> str:
         for t in targets
     ]
     bar_colors = [
-        "'#ef4444'" if t.get("status") == "failed" else "'#10b981'"
-        for t in targets
+        "'#ef4444'" if t.get("status") == "failed" else "'#10b981'" for t in targets
     ]
 
     dist_chart_html = f"""<div class="chart-container">
@@ -690,7 +687,7 @@ new Chart(document.getElementById('qphhChart'), {{
     datasets: [{{
       label: 'QphH',
       data: {json.dumps(qphh_values)},
-      backgroundColor: [{', '.join(bar_colors)}],
+      backgroundColor: [{", ".join(bar_colors)}],
       borderRadius: 4
     }}]
   }},

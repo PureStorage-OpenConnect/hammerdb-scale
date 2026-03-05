@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import yaml
 
 from hammerdb_scale.config.loader import load_config
 from hammerdb_scale.helm.values import (
@@ -25,15 +24,20 @@ def _load_mssql_config():
     return load_config(FIXTURES / "v2-mssql-config.yaml")
 
 
-
-
 class TestGenerateHelmValues:
     def test_top_level_keys(self):
         config = _load_oracle_config()
         vals = generate_helm_values(config, "build", "tprocc", "test-20260101-1200")
         expected_keys = {
-            "testRun", "targets", "hammerdb", "global", "databases",
-            "pureStorage", "naming", "extraLabels", "kubernetes",
+            "testRun",
+            "targets",
+            "hammerdb",
+            "global",
+            "databases",
+            "pureStorage",
+            "naming",
+            "extraLabels",
+            "kubernetes",
         }
         assert set(vals.keys()) == expected_keys
 
@@ -87,8 +91,6 @@ class TestGenerateHelmValues:
         assert vals["kubernetes"]["job_ttl"] == 86400
 
 
-
-
 class TestBuildHammerdbSection:
     def test_tprocc_camel_case_mapping(self):
         """v2 snake_case → v1 camelCase."""
@@ -126,8 +128,6 @@ class TestBuildHammerdbSection:
         assert conn["tcp"] is True
         assert conn["authentication"] == "sql"
         assert "odbc_driver" in conn
-
-
 
 
 class TestBuildDatabasesSection:
@@ -169,8 +169,6 @@ class TestBuildDatabasesSection:
         oracle = section["oracle"]
         assert oracle["port"] == 1521
         assert oracle["service"] == "ORCLPDB"
-
-
 
 
 class TestBuildPureStorageSection:

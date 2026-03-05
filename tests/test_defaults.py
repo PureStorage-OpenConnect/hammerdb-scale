@@ -1,7 +1,5 @@
 """Tests for target expansion and deep merge logic."""
 
-import pytest
-
 from hammerdb_scale.config.defaults import _deep_merge, _strip_nones, expand_targets
 from hammerdb_scale.config.schema import (
     DatabaseType,

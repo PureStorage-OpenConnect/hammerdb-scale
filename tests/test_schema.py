@@ -9,12 +9,8 @@ from hammerdb_scale.config.schema import (
     HammerDBScaleConfig,
     ImageConfig,
     ImagePullPolicy,
-    MssqlConfig,
     MssqlTprochConfig,
     OracleConfig,
-    TargetDefaults,
-    TargetHost,
-    TargetsConfig,
 )
 
 
@@ -250,6 +246,8 @@ class TestFullConfig:
         config = HammerDBScaleConfig(**data)
         assert config.description == "Full test"
         assert config.default_benchmark == BenchmarkType.tprocc
-        assert config.targets.defaults.image.pull_policy == ImagePullPolicy.if_not_present
+        assert (
+            config.targets.defaults.image.pull_policy == ImagePullPolicy.if_not_present
+        )
         assert config.targets.defaults.oracle.port == 1522
         assert config.storage_metrics.enabled is True

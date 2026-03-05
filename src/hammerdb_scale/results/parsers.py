@@ -46,9 +46,7 @@ class OracleParser(OutputParser):
 
     # TPC-H patterns
     QPHH_PATTERN = re.compile(r"QphH(?:@\d+)?[:\s]+([0-9]+\.?[0-9]*)")
-    QUERY_PATTERN = re.compile(
-        r"Query\s+(\d+)[:\s]+([0-9]+\.?[0-9]*)\s+seconds?"
-    )
+    QUERY_PATTERN = re.compile(r"Query\s+(\d+)[:\s]+([0-9]+\.?[0-9]*)\s+seconds?")
 
     def parse_tprocc(self, log_text: str) -> TproccResult | None:
         tpm_matches = self.TPM_PATTERN.findall(log_text)
@@ -100,9 +98,7 @@ class MssqlParser(OutputParser):
 
     # TPC-H patterns (same as Oracle)
     QPHH_PATTERN = re.compile(r"QphH(?:@\d+)?[:\s]+([0-9]+\.?[0-9]*)")
-    QUERY_PATTERN = re.compile(
-        r"Query\s+(\d+)[:\s]+([0-9]+\.?[0-9]*)\s+seconds?"
-    )
+    QUERY_PATTERN = re.compile(r"Query\s+(\d+)[:\s]+([0-9]+\.?[0-9]*)\s+seconds?")
 
     def parse_tprocc(self, log_text: str) -> TproccResult | None:
         # Try "System achieved" pattern first (more specific)

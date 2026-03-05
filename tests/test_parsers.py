@@ -17,12 +17,8 @@ from hammerdb_scale.results.parsers import (
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
-
-
 def _load(filename: str) -> str:
     return (FIXTURES / filename).read_text()
-
-
 
 
 class TestOracleTprocc:
@@ -68,8 +64,6 @@ class TestOracleTprocc:
         assert result.nopm == 18000
 
 
-
-
 class TestOracleTproch:
     parser = OracleParser()
 
@@ -112,8 +106,6 @@ class TestOracleTproch:
         assert q1.time_seconds == pytest.approx(12.0)
 
 
-
-
 class TestMssqlTprocc:
     parser = MssqlParser()
 
@@ -143,8 +135,6 @@ class TestMssqlTprocc:
         assert result.nopm == 14000
 
 
-
-
 class TestMssqlTproch:
     parser = MssqlParser()
 
@@ -162,8 +152,6 @@ class TestMssqlTproch:
 
     def test_returns_none_on_empty(self):
         assert self.parser.parse_tproch("") is None
-
-
 
 
 class TestErrorDetection:
@@ -201,8 +189,6 @@ class TestErrorDetection:
         for parser_cls in (OracleParser, MssqlParser):
             parser = parser_cls()
             assert parser.detect_error("Vuser 1:FINISHED SUCCESS\n") is None
-
-
 
 
 class TestGetParser:

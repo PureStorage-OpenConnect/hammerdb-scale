@@ -12,8 +12,6 @@ from hammerdb_scale.k8s.naming import (
 )
 
 
-
-
 def test_run_hash_is_deterministic():
     h1 = generate_run_hash("myapp", "myapp-20260101-1200")
     h2 = generate_run_hash("myapp", "myapp-20260101-1200")
@@ -34,8 +32,6 @@ def test_run_hash_different_inputs():
     h1 = generate_run_hash("app-a", "app-a-20260101-1200")
     h2 = generate_run_hash("app-b", "app-b-20260101-1200")
     assert h1 != h2
-
-
 
 
 def test_job_name_format():
@@ -59,8 +55,6 @@ def test_job_name_index_zero_padded():
     assert "-01-" in name
 
 
-
-
 def test_release_name_format():
     name = generate_release_name("run", "a1b2c3d4")
     assert name == "hdb-run-a1b2c3d4"
@@ -69,8 +63,6 @@ def test_release_name_format():
 def test_release_name_build():
     name = generate_release_name("build", "deadbeef")
     assert name == "hdb-build-deadbeef"
-
-
 
 
 def test_test_id_starts_with_name():
@@ -86,8 +78,6 @@ def test_test_id_has_timestamp_format():
     assert len(parts) >= 3
     assert len(parts[-2]) == 8  # YYYYMMDD
     assert len(parts[-1]) == 4  # HHMM
-
-
 
 
 def test_labels_has_all_keys():
@@ -133,13 +123,15 @@ def test_labels_values():
 
 def test_labels_target_index_is_string():
     labels = generate_labels(
-        test_id="t", phase="run", benchmark="tprocc",
-        target_name="n", target_index=3, database_type="oracle",
+        test_id="t",
+        phase="run",
+        benchmark="tprocc",
+        target_name="n",
+        target_index=3,
+        database_type="oracle",
         deployment_name="d",
     )
     assert isinstance(labels["hammerdb.io/target-index"], str)
-
-
 
 
 def test_annotations_keys():

@@ -176,7 +176,9 @@ class PureStorageConfig(BaseModel):
     poll_interval: int = Field(default=5, ge=1)
     verify_ssl: bool = False
     api_version: str = "2.4"
-    duration: Optional[int] = Field(default=None, ge=1)  # seconds; None = auto-calculate
+    duration: Optional[int] = Field(
+        default=None, ge=1
+    )  # seconds; None = auto-calculate
 
 
 class StorageMetricsConfig(BaseModel):

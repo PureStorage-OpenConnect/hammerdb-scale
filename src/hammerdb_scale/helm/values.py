@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 from hammerdb_scale.config.defaults import expand_targets
-from hammerdb_scale.config.schema import DatabaseType, HammerDBScaleConfig, MssqlConfig
+from hammerdb_scale.config.schema import HammerDBScaleConfig, MssqlConfig
 from hammerdb_scale.constants import PHASE_MAP, VERSION
 from hammerdb_scale.k8s.naming import generate_run_hash
 
 
 def generate_helm_values(
     config: HammerDBScaleConfig,
-    phase: str,       # CLI phase: "build" or "run"
-    benchmark: str,   # "tprocc" or "tproch"
+    phase: str,  # CLI phase: "build" or "run"
+    benchmark: str,  # "tprocc" or "tproch"
     test_id: str,
 ) -> dict:
     """Produce a dict matching the existing Helm values.yaml schema.
@@ -119,8 +119,6 @@ def _build_hammerdb_section(config: HammerDBScaleConfig, benchmark: str) -> dict
 def _build_databases_section(config: HammerDBScaleConfig) -> dict:
     """Produce the databases: block in v1 Helm format."""
     section: dict = {}
-
-    db_type = config.targets.defaults.type
 
     # Always include both for template compatibility
     mssql_cfg = config.targets.defaults.mssql or MssqlConfig()

@@ -38,7 +38,7 @@ def _extract_pure_metrics_from_log(log_text: str) -> dict | None:
     start = log_text.find(_PURE_JSON_START)
     end = log_text.find(_PURE_JSON_END)
     if start != -1 and end != -1 and end > start:
-        raw = log_text[start + len(_PURE_JSON_START):end].strip()
+        raw = log_text[start + len(_PURE_JSON_START) : end].strip()
         if raw:
             try:
                 return json.loads(raw)
@@ -60,15 +60,17 @@ def _extract_pure_metrics_from_log(log_text: str) -> dict | None:
 
     raw_metrics = []
     for m in matches:
-        raw_metrics.append({
-            "timestamp": "",
-            "read_iops": int(m[1]),
-            "write_iops": int(m[2]),
-            "read_latency_us": int(m[3]),
-            "write_latency_us": int(m[4]),
-            "read_bandwidth_mbps": 0,
-            "write_bandwidth_mbps": 0,
-        })
+        raw_metrics.append(
+            {
+                "timestamp": "",
+                "read_iops": int(m[1]),
+                "write_iops": int(m[2]),
+                "read_latency_us": int(m[3]),
+                "write_latency_us": int(m[4]),
+                "read_bandwidth_mbps": 0,
+                "write_bandwidth_mbps": 0,
+            }
+        )
 
     # Parse the summary stats block printed by the collector
     summary = _parse_pure_summary_from_log(log_text)
@@ -91,27 +93,35 @@ def _parse_pure_summary_from_log(log_text: str) -> dict:
 
     _extract(
         r"Read Latency \(µs\):\s+avg=(\d+)\s+p95=(\d+)\s+p99=(\d+)",
-        "read_latency_us_avg", "read_latency_us_p95", "read_latency_us_p99",
+        "read_latency_us_avg",
+        "read_latency_us_p95",
+        "read_latency_us_p99",
     )
     _extract(
         r"Write Latency \(µs\):\s+avg=(\d+)\s+p95=(\d+)\s+p99=(\d+)",
-        "write_latency_us_avg", "write_latency_us_p95", "write_latency_us_p99",
+        "write_latency_us_avg",
+        "write_latency_us_p95",
+        "write_latency_us_p99",
     )
     _extract(
         r"Read IOPS:\s+avg=(\d+)\s+max=(\d+)",
-        "read_iops_avg", "read_iops_max",
+        "read_iops_avg",
+        "read_iops_max",
     )
     _extract(
         r"Write IOPS:\s+avg=(\d+)\s+max=(\d+)",
-        "write_iops_avg", "write_iops_max",
+        "write_iops_avg",
+        "write_iops_max",
     )
     _extract(
         r"Read BW \(MB/s\):\s+avg=([0-9.]+)\s+max=([0-9.]+)",
-        "read_bandwidth_mbps_avg", "read_bandwidth_mbps_max",
+        "read_bandwidth_mbps_avg",
+        "read_bandwidth_mbps_max",
     )
     _extract(
         r"Write BW \(MB/s\):\s+avg=([0-9.]+)\s+max=([0-9.]+)",
-        "write_bandwidth_mbps_avg", "write_bandwidth_mbps_max",
+        "write_bandwidth_mbps_avg",
+        "write_bandwidth_mbps_max",
     )
     _extract(
         r"Avg Read Block \(KB\):\s+([0-9.]+)",
@@ -222,17 +232,21 @@ def aggregate_results(
         "image": f"{config.targets.defaults.image.repository}:{config.targets.defaults.image.tag}",
     }
     if benchmark == "tprocc":
-        config_summary.update({
-            "warehouses": config.hammerdb.tprocc.warehouses,
-            "virtual_users": config.hammerdb.tprocc.load_virtual_users,
-            "rampup_minutes": config.hammerdb.tprocc.rampup,
-            "duration_minutes": config.hammerdb.tprocc.duration,
-        })
+        config_summary.update(
+            {
+                "warehouses": config.hammerdb.tprocc.warehouses,
+                "virtual_users": config.hammerdb.tprocc.load_virtual_users,
+                "rampup_minutes": config.hammerdb.tprocc.rampup,
+                "duration_minutes": config.hammerdb.tprocc.duration,
+            }
+        )
     elif benchmark == "tproch":
-        config_summary.update({
-            "scale_factor": config.hammerdb.tproch.scale_factor,
-            "virtual_users": config.hammerdb.tproch.load_virtual_users,
-        })
+        config_summary.update(
+            {
+                "scale_factor": config.hammerdb.tproch.scale_factor,
+                "virtual_users": config.hammerdb.tproch.load_virtual_users,
+            }
+        )
 
     summary = {
         "version": VERSION,
@@ -282,12 +296,14 @@ def _build_aggregate(targets: list[dict], benchmark: str) -> dict:
         per_query_avg = []
         for qn in sorted(per_query):
             times = per_query[qn]
-            per_query_avg.append({
-                "query": qn,
-                "avg_seconds": round(sum(times) / len(times), 2),
-                "min_seconds": round(min(times), 2),
-                "max_seconds": round(max(times), 2),
-            })
+            per_query_avg.append(
+                {
+                    "query": qn,
+                    "avg_seconds": round(sum(times) / len(times), 2),
+                    "min_seconds": round(min(times), 2),
+                    "max_seconds": round(max(times), 2),
+                }
+            )
 
         return {
             "avg_qphh": round(sum(qphhs) / len(qphhs), 1) if qphhs else 0,

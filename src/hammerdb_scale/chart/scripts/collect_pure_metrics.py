@@ -30,8 +30,8 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class PureStorageCollector:
         api_token: str,
         poll_interval: int = 5,
         verify_ssl: bool = False,
-        api_version: str = "2.4"
+        api_version: str = "2.4",
     ):
         """
         Initialize the collector.
@@ -76,7 +76,9 @@ class PureStorageCollector:
         logger.info(f"Poll Interval: {self.poll_interval}s")
 
         if not self.verify_ssl:
-            logger.warning("SSL certificate verification is DISABLED - not recommended for production")
+            logger.warning(
+                "SSL certificate verification is DISABLED - not recommended for production"
+            )
 
     def login(self) -> bool:
         """
@@ -90,13 +92,16 @@ class PureStorageCollector:
         try:
             response = requests.post(
                 f"{self.base_url}/login",
-                headers={"api-token": self.api_token, "Content-Type": "application/json"},
+                headers={
+                    "api-token": self.api_token,
+                    "Content-Type": "application/json",
+                },
                 verify=self.verify_ssl,
-                timeout=10
+                timeout=10,
             )
 
             if response.status_code == 200:
-                self.session_token = response.headers.get('x-auth-token')
+                self.session_token = response.headers.get("x-auth-token")
                 if self.session_token:
                     logger.info("Login successful")
                     return True
@@ -104,7 +109,9 @@ class PureStorageCollector:
                     logger.error("No x-auth-token in login response")
                     return False
             else:
-                logger.error(f"Login failed - HTTP {response.status_code}: {response.text}")
+                logger.error(
+                    f"Login failed - HTTP {response.status_code}: {response.text}"
+                )
                 return False
 
         except requests.exceptions.RequestException as e:
@@ -129,7 +136,7 @@ class PureStorageCollector:
         url = f"{self.base_url}{endpoint}"
         headers = {
             "x-auth-token": self.session_token,
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
         try:
@@ -138,14 +145,14 @@ class PureStorageCollector:
                 url=url,
                 headers=headers,
                 verify=self.verify_ssl,
-                timeout=10
+                timeout=10,
             )
             response.raise_for_status()
             return response.json()
 
         except requests.exceptions.HTTPError as e:
             logger.error(f"HTTP error for {endpoint}: {e}")
-            if hasattr(e.response, 'text'):
+            if hasattr(e.response, "text"):
                 logger.error(f"Response: {e.response.text}")
             return None
         except requests.exceptions.RequestException as e:
@@ -175,9 +182,11 @@ class PureStorageCollector:
         # Then test with a simple API call
         result = self._make_request("/arrays")
 
-        if result and 'items' in result and len(result['items']) > 0:
-            array_info = result['items'][0]
-            logger.info(f"Successfully connected to array: {array_info.get('name', 'Unknown')}")
+        if result and "items" in result and len(result["items"]) > 0:
+            array_info = result["items"][0]
+            logger.info(
+                f"Successfully connected to array: {array_info.get('name', 'Unknown')}"
+            )
             logger.info(f"Array ID: {array_info.get('id', 'Unknown')}")
             return True
         else:
@@ -193,33 +202,35 @@ class PureStorageCollector:
         """
         result = self._make_request("/arrays/performance")
 
-        if not result or 'items' not in result or len(result['items']) == 0:
+        if not result or "items" not in result or len(result["items"]) == 0:
             logger.error("No performance data returned from array")
             return None
 
-        perf = result['items'][0]
+        perf = result["items"][0]
 
         # Extract and calculate metrics
-        read_iops = perf.get('reads_per_sec', 0)
-        write_iops = perf.get('writes_per_sec', 0)
-        read_bw_bytes = perf.get('read_bytes_per_sec', 0)
-        write_bw_bytes = perf.get('write_bytes_per_sec', 0)
+        read_iops = perf.get("reads_per_sec", 0)
+        write_iops = perf.get("writes_per_sec", 0)
+        read_bw_bytes = perf.get("read_bytes_per_sec", 0)
+        write_bw_bytes = perf.get("write_bytes_per_sec", 0)
 
         # Calculate average block sizes (avoid division by zero)
         avg_read_block_kb = (read_bw_bytes / read_iops / 1024) if read_iops > 0 else 0
-        avg_write_block_kb = (write_bw_bytes / write_iops / 1024) if write_iops > 0 else 0
+        avg_write_block_kb = (
+            (write_bw_bytes / write_iops / 1024) if write_iops > 0 else 0
+        )
 
         metrics = {
-            'timestamp': datetime.now(timezone.utc).isoformat(),
-            'read_latency_us': perf.get('usec_per_read_op', 0),
-            'write_latency_us': perf.get('usec_per_write_op', 0),
-            'read_iops': read_iops,
-            'write_iops': write_iops,
-            'read_bandwidth_mbps': read_bw_bytes / (1024 * 1024),
-            'write_bandwidth_mbps': write_bw_bytes / (1024 * 1024),
-            'avg_read_block_size_kb': avg_read_block_kb,
-            'avg_write_block_size_kb': avg_write_block_kb,
-            'queue_depth': perf.get('queue_depth', 0),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "read_latency_us": perf.get("usec_per_read_op", 0),
+            "write_latency_us": perf.get("usec_per_write_op", 0),
+            "read_iops": read_iops,
+            "write_iops": write_iops,
+            "read_bandwidth_mbps": read_bw_bytes / (1024 * 1024),
+            "write_bandwidth_mbps": write_bw_bytes / (1024 * 1024),
+            "avg_read_block_size_kb": avg_read_block_kb,
+            "avg_write_block_size_kb": avg_write_block_kb,
+            "queue_depth": perf.get("queue_depth", 0),
         }
 
         return metrics
@@ -264,7 +275,9 @@ class PureStorageCollector:
                         f"W_lat:{metrics['write_latency_us']:.0f}µs"
                     )
                 else:
-                    logger.warning(f"Failed to collect metrics (attempt {collection_count + 1})")
+                    logger.warning(
+                        f"Failed to collect metrics (attempt {collection_count + 1})"
+                    )
 
                 # Sleep until next collection
                 remaining = end_time - time.time()
@@ -296,7 +309,7 @@ class PureStorageCollector:
         def calc_stats(values: List[float]) -> Dict:
             """Calculate statistics for a list of values."""
             if not values:
-                return {'min': 0, 'max': 0, 'avg': 0, 'p95': 0, 'p99': 0}
+                return {"min": 0, "max": 0, "avg": 0, "p95": 0, "p99": 0}
 
             sorted_vals = sorted(values)
             count = len(sorted_vals)
@@ -306,22 +319,22 @@ class PureStorageCollector:
             p99_idx = int(count * 0.99)
 
             return {
-                'min': sorted_vals[0],
-                'max': sorted_vals[-1],
-                'avg': sum(sorted_vals) / count,
-                'p95': sorted_vals[p95_idx] if p95_idx < count else sorted_vals[-1],
-                'p99': sorted_vals[p99_idx] if p99_idx < count else sorted_vals[-1],
+                "min": sorted_vals[0],
+                "max": sorted_vals[-1],
+                "avg": sum(sorted_vals) / count,
+                "p95": sorted_vals[p95_idx] if p95_idx < count else sorted_vals[-1],
+                "p99": sorted_vals[p99_idx] if p99_idx < count else sorted_vals[-1],
             }
 
         # Extract metric lists
-        read_lat = [m['read_latency_us'] for m in self.metrics_data]
-        write_lat = [m['write_latency_us'] for m in self.metrics_data]
-        read_iops = [m['read_iops'] for m in self.metrics_data]
-        write_iops = [m['write_iops'] for m in self.metrics_data]
-        read_bw = [m['read_bandwidth_mbps'] for m in self.metrics_data]
-        write_bw = [m['write_bandwidth_mbps'] for m in self.metrics_data]
-        read_block = [m['avg_read_block_size_kb'] for m in self.metrics_data]
-        write_block = [m['avg_write_block_size_kb'] for m in self.metrics_data]
+        read_lat = [m["read_latency_us"] for m in self.metrics_data]
+        write_lat = [m["write_latency_us"] for m in self.metrics_data]
+        read_iops = [m["read_iops"] for m in self.metrics_data]
+        write_iops = [m["write_iops"] for m in self.metrics_data]
+        read_bw = [m["read_bandwidth_mbps"] for m in self.metrics_data]
+        write_bw = [m["write_bandwidth_mbps"] for m in self.metrics_data]
+        read_block = [m["avg_read_block_size_kb"] for m in self.metrics_data]
+        write_block = [m["avg_write_block_size_kb"] for m in self.metrics_data]
 
         # Calculate statistics
         read_lat_stats = calc_stats(read_lat)
@@ -334,37 +347,37 @@ class PureStorageCollector:
         write_block_stats = calc_stats(write_block)
 
         return {
-            'source': 'array',
-            'source_name': self.array_host,
-            'sample_count': len(self.metrics_data),
-            'read_latency_us_min': read_lat_stats['min'],
-            'read_latency_us_max': read_lat_stats['max'],
-            'read_latency_us_avg': read_lat_stats['avg'],
-            'read_latency_us_p95': read_lat_stats['p95'],
-            'read_latency_us_p99': read_lat_stats['p99'],
-            'write_latency_us_min': write_lat_stats['min'],
-            'write_latency_us_max': write_lat_stats['max'],
-            'write_latency_us_avg': write_lat_stats['avg'],
-            'write_latency_us_p95': write_lat_stats['p95'],
-            'write_latency_us_p99': write_lat_stats['p99'],
-            'read_iops_min': read_iops_stats['min'],
-            'read_iops_max': read_iops_stats['max'],
-            'read_iops_avg': read_iops_stats['avg'],
-            'write_iops_min': write_iops_stats['min'],
-            'write_iops_max': write_iops_stats['max'],
-            'write_iops_avg': write_iops_stats['avg'],
-            'read_bandwidth_mbps_min': read_bw_stats['min'],
-            'read_bandwidth_mbps_max': read_bw_stats['max'],
-            'read_bandwidth_mbps_avg': read_bw_stats['avg'],
-            'write_bandwidth_mbps_min': write_bw_stats['min'],
-            'write_bandwidth_mbps_max': write_bw_stats['max'],
-            'write_bandwidth_mbps_avg': write_bw_stats['avg'],
-            'avg_read_block_size_kb_min': read_block_stats['min'],
-            'avg_read_block_size_kb_max': read_block_stats['max'],
-            'avg_read_block_size_kb_avg': read_block_stats['avg'],
-            'avg_write_block_size_kb_min': write_block_stats['min'],
-            'avg_write_block_size_kb_max': write_block_stats['max'],
-            'avg_write_block_size_kb_avg': write_block_stats['avg'],
+            "source": "array",
+            "source_name": self.array_host,
+            "sample_count": len(self.metrics_data),
+            "read_latency_us_min": read_lat_stats["min"],
+            "read_latency_us_max": read_lat_stats["max"],
+            "read_latency_us_avg": read_lat_stats["avg"],
+            "read_latency_us_p95": read_lat_stats["p95"],
+            "read_latency_us_p99": read_lat_stats["p99"],
+            "write_latency_us_min": write_lat_stats["min"],
+            "write_latency_us_max": write_lat_stats["max"],
+            "write_latency_us_avg": write_lat_stats["avg"],
+            "write_latency_us_p95": write_lat_stats["p95"],
+            "write_latency_us_p99": write_lat_stats["p99"],
+            "read_iops_min": read_iops_stats["min"],
+            "read_iops_max": read_iops_stats["max"],
+            "read_iops_avg": read_iops_stats["avg"],
+            "write_iops_min": write_iops_stats["min"],
+            "write_iops_max": write_iops_stats["max"],
+            "write_iops_avg": write_iops_stats["avg"],
+            "read_bandwidth_mbps_min": read_bw_stats["min"],
+            "read_bandwidth_mbps_max": read_bw_stats["max"],
+            "read_bandwidth_mbps_avg": read_bw_stats["avg"],
+            "write_bandwidth_mbps_min": write_bw_stats["min"],
+            "write_bandwidth_mbps_max": write_bw_stats["max"],
+            "write_bandwidth_mbps_avg": write_bw_stats["avg"],
+            "avg_read_block_size_kb_min": read_block_stats["min"],
+            "avg_read_block_size_kb_max": read_block_stats["max"],
+            "avg_read_block_size_kb_avg": read_block_stats["avg"],
+            "avg_write_block_size_kb_min": write_block_stats["min"],
+            "avg_write_block_size_kb_max": write_block_stats["max"],
+            "avg_write_block_size_kb_avg": write_block_stats["avg"],
         }
 
     def save_results(self, output_file: str):
@@ -375,13 +388,13 @@ class PureStorageCollector:
             output_file: Path to output JSON file
         """
         results = {
-            'metadata': {
-                'array_host': self.array_host,
-                'poll_interval_sec': self.poll_interval,
-                'api_version': self.api_version,
+            "metadata": {
+                "array_host": self.array_host,
+                "poll_interval_sec": self.poll_interval,
+                "api_version": self.api_version,
             },
-            'summary': self.get_summary_statistics(),
-            'raw_metrics': self.metrics_data,
+            "summary": self.get_summary_statistics(),
+            "raw_metrics": self.metrics_data,
         }
 
         try:
@@ -389,7 +402,7 @@ class PureStorageCollector:
             if output_dir:
                 os.makedirs(output_dir, exist_ok=True)
 
-            with open(output_file, 'w') as f:
+            with open(output_file, "w") as f:
                 json.dump(results, f, indent=2)
             logger.info(f"Results saved to {output_file}")
         except Exception as e:
@@ -399,9 +412,9 @@ class PureStorageCollector:
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description='Collect Pure Storage FlashArray performance metrics',
+        description="Collect Pure Storage FlashArray performance metrics",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog='''
+        epilog="""
 Examples:
   # Collect array-level metrics for 60 seconds
   %(prog)s --host 10.21.158.110 --token abc123 --duration 60
@@ -410,52 +423,48 @@ Examples:
   export PURE_HOST=10.21.158.110
   export PURE_API_TOKEN=abc123
   %(prog)s --duration 60 --output /tmp/metrics.json
-        '''
+        """,
     )
 
     parser.add_argument(
-        '--host',
-        default=os.getenv('PURE_HOST'),
-        help='FlashArray management IP or hostname (or set PURE_HOST env var)'
+        "--host",
+        default=os.getenv("PURE_HOST"),
+        help="FlashArray management IP or hostname (or set PURE_HOST env var)",
     )
     parser.add_argument(
-        '--token',
-        default=os.getenv('PURE_API_TOKEN'),
-        help='API token for authentication (or set PURE_API_TOKEN env var)'
+        "--token",
+        default=os.getenv("PURE_API_TOKEN"),
+        help="API token for authentication (or set PURE_API_TOKEN env var)",
     )
     parser.add_argument(
-        '--duration',
+        "--duration",
         type=int,
-        default=int(os.getenv('PURE_DURATION', '60')),
-        help='Collection duration in seconds (default: 60)'
+        default=int(os.getenv("PURE_DURATION", "60")),
+        help="Collection duration in seconds (default: 60)",
     )
     parser.add_argument(
-        '--interval',
+        "--interval",
         type=int,
-        default=int(os.getenv('PURE_INTERVAL', '5')),
-        help='Polling interval in seconds (default: 5)'
+        default=int(os.getenv("PURE_INTERVAL", "5")),
+        help="Polling interval in seconds (default: 5)",
     )
     parser.add_argument(
-        '--output',
-        default=os.getenv('PURE_OUTPUT', 'pure_metrics.json'),
-        help='Output JSON file path (default: pure_metrics.json)'
+        "--output",
+        default=os.getenv("PURE_OUTPUT", "pure_metrics.json"),
+        help="Output JSON file path (default: pure_metrics.json)",
     )
     parser.add_argument(
-        '--no-verify-ssl',
-        action='store_true',
-        default=os.getenv('PURE_NO_VERIFY_SSL', '').lower() in ('true', '1', 'yes'),
-        help='Disable SSL certificate verification'
+        "--no-verify-ssl",
+        action="store_true",
+        default=os.getenv("PURE_NO_VERIFY_SSL", "").lower() in ("true", "1", "yes"),
+        help="Disable SSL certificate verification",
     )
     parser.add_argument(
-        '--api-version',
-        default=os.getenv('PURE_API_VERSION', '2.4'),
-        help='Pure Storage REST API version (default: 2.4)'
+        "--api-version",
+        default=os.getenv("PURE_API_VERSION", "2.4"),
+        help="Pure Storage REST API version (default: 2.4)",
     )
-    parser.add_argument(
-        '--verbose',
-        action='store_true',
-        help='Enable verbose logging'
-    )
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
 
     args = parser.parse_args()
 
@@ -475,7 +484,7 @@ Examples:
         api_token=args.token,
         poll_interval=args.interval,
         verify_ssl=not args.no_verify_ssl,
-        api_version=args.api_version
+        api_version=args.api_version,
     )
 
     # Start collection
@@ -491,22 +500,38 @@ Examples:
             print("=" * 60)
             print(f"Source: {summary['source']} - {summary['source_name']}")
             print(f"Samples: {summary['sample_count']}")
-            print(f"\nRead Latency (µs):  avg={summary.get('read_latency_us_avg', 0):.0f} "
-                  f"p95={summary.get('read_latency_us_p95', 0):.0f} "
-                  f"p99={summary.get('read_latency_us_p99', 0):.0f}")
-            print(f"Write Latency (µs): avg={summary.get('write_latency_us_avg', 0):.0f} "
-                  f"p95={summary.get('write_latency_us_p95', 0):.0f} "
-                  f"p99={summary.get('write_latency_us_p99', 0):.0f}")
-            print(f"\nRead IOPS:  avg={summary.get('read_iops_avg', 0):.0f} "
-                  f"max={summary.get('read_iops_max', 0):.0f}")
-            print(f"Write IOPS: avg={summary.get('write_iops_avg', 0):.0f} "
-                  f"max={summary.get('write_iops_max', 0):.0f}")
-            print(f"\nRead BW (MB/s):  avg={summary.get('read_bandwidth_mbps_avg', 0):.1f} "
-                  f"max={summary.get('read_bandwidth_mbps_max', 0):.1f}")
-            print(f"Write BW (MB/s): avg={summary.get('write_bandwidth_mbps_avg', 0):.1f} "
-                  f"max={summary.get('write_bandwidth_mbps_max', 0):.1f}")
-            print(f"\nAvg Read Block (KB):  {summary.get('avg_read_block_size_kb_avg', 0):.1f}")
-            print(f"Avg Write Block (KB): {summary.get('avg_write_block_size_kb_avg', 0):.1f}")
+            print(
+                f"\nRead Latency (µs):  avg={summary.get('read_latency_us_avg', 0):.0f} "
+                f"p95={summary.get('read_latency_us_p95', 0):.0f} "
+                f"p99={summary.get('read_latency_us_p99', 0):.0f}"
+            )
+            print(
+                f"Write Latency (µs): avg={summary.get('write_latency_us_avg', 0):.0f} "
+                f"p95={summary.get('write_latency_us_p95', 0):.0f} "
+                f"p99={summary.get('write_latency_us_p99', 0):.0f}"
+            )
+            print(
+                f"\nRead IOPS:  avg={summary.get('read_iops_avg', 0):.0f} "
+                f"max={summary.get('read_iops_max', 0):.0f}"
+            )
+            print(
+                f"Write IOPS: avg={summary.get('write_iops_avg', 0):.0f} "
+                f"max={summary.get('write_iops_max', 0):.0f}"
+            )
+            print(
+                f"\nRead BW (MB/s):  avg={summary.get('read_bandwidth_mbps_avg', 0):.1f} "
+                f"max={summary.get('read_bandwidth_mbps_max', 0):.1f}"
+            )
+            print(
+                f"Write BW (MB/s): avg={summary.get('write_bandwidth_mbps_avg', 0):.1f} "
+                f"max={summary.get('write_bandwidth_mbps_max', 0):.1f}"
+            )
+            print(
+                f"\nAvg Read Block (KB):  {summary.get('avg_read_block_size_kb_avg', 0):.1f}"
+            )
+            print(
+                f"Avg Write Block (KB): {summary.get('avg_write_block_size_kb_avg', 0):.1f}"
+            )
             print("=" * 60)
         else:
             logger.warning("No metrics collected")
@@ -517,5 +542,5 @@ Examples:
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

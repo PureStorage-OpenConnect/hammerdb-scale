@@ -34,9 +34,7 @@ def save_results(
     return output_dir
 
 
-def load_results(
-    test_id: str, results_dir: Path = Path("./results")
-) -> dict | None:
+def load_results(test_id: str, results_dir: Path = Path("./results")) -> dict | None:
     """Load previously saved results from summary.json."""
     summary_path = results_dir / test_id / "summary.json"
     if not summary_path.exists():
@@ -58,8 +56,6 @@ def load_pure_metrics(
         return json.load(f)
 
 
-def results_exist(
-    test_id: str, results_dir: Path = Path("./results")
-) -> bool:
+def results_exist(test_id: str, results_dir: Path = Path("./results")) -> bool:
     """Check if results have been saved for a test ID."""
     return (results_dir / test_id / "summary.json").exists()

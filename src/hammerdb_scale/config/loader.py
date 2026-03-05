@@ -10,7 +10,11 @@ from pydantic import ValidationError
 
 from hammerdb_scale.config.defaults import _strip_nones
 from hammerdb_scale.config.schema import HammerDBScaleConfig
-from hammerdb_scale.constants import CONFIG_ENV_VAR, DEFAULT_CONFIG_FILENAMES, ConfigError
+from hammerdb_scale.constants import (
+    CONFIG_ENV_VAR,
+    DEFAULT_CONFIG_FILENAMES,
+    ConfigError,
+)
 from hammerdb_scale.output import console
 
 
@@ -73,10 +77,7 @@ def detect_and_migrate(data: dict) -> dict:
                 "username": first.get("username"),
                 "password": first.get("password"),
             },
-            "hosts": [
-                {"name": t["name"], "host": t["host"]}
-                for t in old_targets
-            ],
+            "hosts": [{"name": t["name"], "host": t["host"]} for t in old_targets],
         }
         # Carry per-target overrides if they differ from first target
         for i, t in enumerate(old_targets):
@@ -198,7 +199,9 @@ def load_config(path: Path) -> HammerDBScaleConfig:
         raise ConfigError(f"Invalid YAML syntax in {path}:\n{e}") from e
 
     if not isinstance(data, dict):
-        raise ConfigError(f"Config file {path} must contain a YAML mapping, not {type(data).__name__}")
+        raise ConfigError(
+            f"Config file {path} must contain a YAML mapping, not {type(data).__name__}"
+        )
 
     # Auto-migrate v1 format
     data = detect_and_migrate(data)
