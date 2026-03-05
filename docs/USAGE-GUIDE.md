@@ -30,7 +30,7 @@ pip install -e ".[dev]"
 ## Quick Start
 
 ```bash
-# 1. Generate a config file
+# 1. Generate a config file (or use -i for a guided wizard)
 hammerdb-scale init
 
 # 2. Validate configuration and connectivity
@@ -60,7 +60,31 @@ Interactive config generator. Prompts for deployment name, database type, benchm
 hammerdb-scale init                    # Default: hammerdb-scale.yaml
 hammerdb-scale init -o my-config.yaml  # Custom output path
 hammerdb-scale init --force            # Overwrite existing file
+hammerdb-scale init -i                 # Guided wizard mode
 ```
+
+#### Wizard Mode (`--interactive` / `-i`)
+
+The `--interactive` flag launches a step-by-step guided wizard with a polished terminal UI:
+
+```bash
+hammerdb-scale init -i
+```
+
+The wizard walks through 6 steps:
+
+1. **Deployment** — Name your benchmark
+2. **Database & Benchmark** — Select Oracle or SQL Server, TPC-C or TPC-H
+3. **Database Targets** — Enter hostnames/IPs (with auto-generated names like `db-01`)
+4. **Credentials** — Database username and password (Oracle: service name, schema password)
+5. **Benchmark Parameters** — Warehouses (TPC-C) or scale factor (TPC-H)
+6. **Infrastructure** — Kubernetes namespace, Pure Storage metrics
+
+After the core steps, an optional **Advanced Options** prompt lets you configure virtual users, rampup/duration, and pod resources. If declined, sensible defaults are used.
+
+A **Configuration Summary** table is shown before writing, giving you a chance to review all values (passwords masked) and confirm or cancel.
+
+Both `init` and `init -i` produce identical YAML output — the wizard is purely a UX enhancement for the input experience.
 
 ### `hammerdb-scale validate`
 
