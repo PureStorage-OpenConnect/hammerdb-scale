@@ -100,94 +100,32 @@ def version() -> None:
         )
 
 
-@app.command()
-def init(
-    output: Path = typer.Option(
-        Path("./hammerdb-scale.yaml"), "-o", "--output", help="Output file path."
-    ),
-    force: bool = typer.Option(False, "--force", help="Overwrite if file exists."),
-) -> None:
-    """Generate a starter config file through interactive prompts."""
-    if output.exists() and not force:
-        overwrite = typer.confirm(f"File {output} exists. Overwrite?")
-        if not overwrite:
-            raise typer.Abort()
-
-    # Deployment name
-    name = typer.prompt("Deployment name")
-
-    # Database type
-    db_type_str = typer.prompt("Database type (oracle/mssql)")
-    while db_type_str not in ("oracle", "mssql"):
-        console.print("[red]Must be 'oracle' or 'mssql'[/red]")
-        db_type_str = typer.prompt("Database type (oracle/mssql)")
-
-    # Benchmark
-    benchmark_str = typer.prompt("Benchmark (tprocc/tproch)")
-    while benchmark_str not in ("tprocc", "tproch"):
-        console.print("[red]Must be 'tprocc' or 'tproch'[/red]")
-        benchmark_str = typer.prompt("Benchmark (tprocc/tproch)")
-
-    # Targets
-    num_targets = typer.prompt("Number of database targets", type=int)
-    hosts: list[dict] = []
-    for i in range(num_targets):
-        console.print(f"\nTarget {i + 1}:")
-        t_name = typer.prompt("  Name (short identifier)")
-        t_host = typer.prompt("  Hostname or IP")
-        hosts.append({"name": t_name, "host": t_host})
-
-    # Credentials
-    default_user = "system" if db_type_str == "oracle" else "sa"
-    username = typer.prompt("\nDatabase username", default=default_user)
-    password = typer.prompt("Database password", hide_input=True)
-
-    # Oracle-specific prompts
-    oracle_config = None
-    if db_type_str == "oracle":
-        service = typer.prompt("\nOracle service name", default="ORCLPDB")
-        oracle_schema_password = typer.prompt(
-            "TPC-C schema password",
-            default=password,
-            hide_input=True,
-        )
-        oracle_config = {
-            "service": service,
-            "port": 1521,
-            "tablespace": "TPCC",
-            "temp_tablespace": "TEMP",
-            "tprocc": {"user": "TPCC", "password": oracle_schema_password},
-            "tproch": {"user": "tpch", "password": oracle_schema_password},
-        }
-
-    # Warehouses (for TPC-C)
-    warehouses = 100
-    if benchmark_str == "tprocc":
-        warehouses = typer.prompt("\nTPC-C warehouses", default=100, type=int)
-
-    # Namespace
-    namespace = typer.prompt("\nKubernetes namespace", default="hammerdb")
-
-    # Pure Storage
-    storage_metrics = None
-    enable_pure = typer.confirm("\nEnable Pure Storage metrics?", default=False)
-    if enable_pure:
-        pure_host = typer.prompt("  FlashArray host/IP")
-        pure_token = typer.prompt("  API token", hide_input=True)
-        storage_metrics = {
-            "enabled": True,
-            "provider": "pure",
-            "pure": {
-                "host": pure_host,
-                "api_token": pure_token,
-                "volume": "",
-                "poll_interval": 5,
-                "verify_ssl": False,
-                "api_version": "2.4",
-            },
-        }
-
-    # Build commented YAML template
+def _build_config_yaml(
+    *,
+    name: str,
+    db_type_str: str,
+    benchmark_str: str,
+    hosts: list[dict],
+    username: str,
+    password: str,
+    oracle_config: dict | None,
+    warehouses: int = 100,
+    namespace: str = "hammerdb",
+    storage_metrics: dict | None = None,
+    build_virtual_users: int = 4,
+    load_virtual_users: int = 4,
+    rampup: int = 5,
+    duration: int = 10,
+    scale_factor: int = 1,
+    build_threads: int = 4,
+    tproch_load_virtual_users: int = 1,
+    total_querysets: int = 1,
+    req_memory: str = "4Gi",
+    req_cpu: str = "4",
+    lim_memory: str = "8Gi",
+    lim_cpu: str = "8",
+) -> str:
+    """Build the commented YAML config template string."""
     image_repo = DEFAULT_IMAGES.get(db_type_str, "sillidata/hammerdb-scale")
 
     # Host entries
@@ -231,11 +169,11 @@ def init(
     tprocc_comment = "" if benchmark_str == "tprocc" else "# "
     tprocc_section = f"""{tprocc_comment}  tprocc:
 {tprocc_comment}    warehouses: {warehouses}                  # data size: 100 = ~10GB, 1000 = ~100GB, 10000 = ~1TB per target
-{tprocc_comment}    build_virtual_users: 4           # parallel threads for schema creation
-{tprocc_comment}    load_virtual_users: 4            # concurrent users during benchmark (tune to match CPU cores)
+{tprocc_comment}    build_virtual_users: {build_virtual_users}           # parallel threads for schema creation
+{tprocc_comment}    load_virtual_users: {load_virtual_users}            # concurrent users during benchmark (tune to match CPU cores)
 {tprocc_comment}    driver: timed                    # "timed" = run for fixed duration, "test" = single iteration
-{tprocc_comment}    rampup: 5                        # warm-up period before measuring (minutes)
-{tprocc_comment}    duration: 10                     # measurement window (minutes), 5-60 typical
+{tprocc_comment}    rampup: {rampup}                        # warm-up period before measuring (minutes)
+{tprocc_comment}    duration: {duration}                     # measurement window (minutes), 5-60 typical
 {tprocc_comment}    total_iterations: 10000000       # max iterations (effectively unlimited with timed driver)
 {tprocc_comment}    all_warehouses: true             # distribute load across all warehouses
 {tprocc_comment}    checkpoint: true                 # issue checkpoint before benchmark
@@ -244,11 +182,11 @@ def init(
     # TPC-H section (always included, commented out if not selected)
     tproch_comment = "" if benchmark_str == "tproch" else "# "
     tproch_section = f"""{tproch_comment}  tproch:
-{tproch_comment}    scale_factor: 1                  # data size multiplier: 1 = ~1GB, 10 = ~10GB, 100 = ~100GB
-{tproch_comment}    build_threads: 4                 # parallel threads for data generation
+{tproch_comment}    scale_factor: {scale_factor}                  # data size multiplier: 1 = ~1GB, 10 = ~10GB, 100 = ~100GB
+{tproch_comment}    build_threads: {build_threads}                 # parallel threads for data generation
 {tproch_comment}    build_virtual_users: 1           # HammerDB orchestrator (keep at 1)
-{tproch_comment}    load_virtual_users: 1            # query concurrency: 1 = Power run, >1 = Throughput run
-{tproch_comment}    total_querysets: 1               # number of full 22-query runs"""
+{tproch_comment}    load_virtual_users: {tproch_load_virtual_users}            # query concurrency: 1 = Power run, >1 = Throughput run
+{tproch_comment}    total_querysets: {total_querysets}               # number of full 22-query runs"""
 
     # Storage metrics section
     if storage_metrics:
@@ -285,7 +223,7 @@ storage_metrics:
   #   verify_ssl: false"""
 
     # Assemble full config
-    config_yaml = f"""# ============================================================================
+    return f"""# ============================================================================
 # HammerDB-Scale Configuration
 # ============================================================================
 # Docs:  https://github.com/PureStorage-OpenConnect/hammerdb-scale/blob/main/docs/CONFIGURATION.md
@@ -338,11 +276,11 @@ hammerdb:
 # Each target gets one pod — scale these based on virtual user count.
 resources:
   requests:
-    memory: "4Gi"
-    cpu: "4"
+    memory: "{req_memory}"
+    cpu: "{req_cpu}"
   limits:
-    memory: "8Gi"
-    cpu: "8"
+    memory: "{lim_memory}"
+    cpu: "{lim_cpu}"
 
 # ============================================================================
 # KUBERNETES SETTINGS
@@ -352,6 +290,119 @@ kubernetes:
   job_ttl: 86400                         # auto-cleanup completed jobs after N seconds (24h)
 {storage_section}
 """
+
+
+@app.command()
+def init(
+    output: Path = typer.Option(
+        Path("./hammerdb-scale.yaml"), "-o", "--output", help="Output file path."
+    ),
+    force: bool = typer.Option(False, "--force", help="Overwrite if file exists."),
+    interactive: bool = typer.Option(
+        False, "-i", "--interactive", help="Launch guided configuration wizard."
+    ),
+) -> None:
+    """Generate a starter config file through interactive prompts."""
+    if output.exists() and not force:
+        overwrite = typer.confirm(f"File {output} exists. Overwrite?")
+        if not overwrite:
+            raise typer.Abort()
+
+    if interactive:
+        from hammerdb_scale.wizard import run_wizard
+
+        values = run_wizard()
+        if values is None:
+            raise typer.Abort()
+
+        config_yaml = _build_config_yaml(**values)
+    else:
+        # Deployment name
+        name = typer.prompt("Deployment name")
+
+        # Database type
+        db_type_str = typer.prompt("Database type (oracle/mssql)")
+        while db_type_str not in ("oracle", "mssql"):
+            console.print("[red]Must be 'oracle' or 'mssql'[/red]")
+            db_type_str = typer.prompt("Database type (oracle/mssql)")
+
+        # Benchmark
+        benchmark_str = typer.prompt("Benchmark (tprocc/tproch)")
+        while benchmark_str not in ("tprocc", "tproch"):
+            console.print("[red]Must be 'tprocc' or 'tproch'[/red]")
+            benchmark_str = typer.prompt("Benchmark (tprocc/tproch)")
+
+        # Targets
+        num_targets = typer.prompt("Number of database targets", type=int)
+        hosts: list[dict] = []
+        for i in range(num_targets):
+            console.print(f"\nTarget {i + 1}:")
+            t_name = typer.prompt("  Name (short identifier)")
+            t_host = typer.prompt("  Hostname or IP")
+            hosts.append({"name": t_name, "host": t_host})
+
+        # Credentials
+        default_user = "system" if db_type_str == "oracle" else "sa"
+        username = typer.prompt("\nDatabase username", default=default_user)
+        password = typer.prompt("Database password", hide_input=True)
+
+        # Oracle-specific prompts
+        oracle_config = None
+        if db_type_str == "oracle":
+            service = typer.prompt("\nOracle service name", default="ORCLPDB")
+            oracle_schema_password = typer.prompt(
+                "TPC-C schema password",
+                default=password,
+                hide_input=True,
+            )
+            oracle_config = {
+                "service": service,
+                "port": 1521,
+                "tablespace": "TPCC",
+                "temp_tablespace": "TEMP",
+                "tprocc": {"user": "TPCC", "password": oracle_schema_password},
+                "tproch": {"user": "tpch", "password": oracle_schema_password},
+            }
+
+        # Warehouses (for TPC-C)
+        warehouses = 100
+        if benchmark_str == "tprocc":
+            warehouses = typer.prompt("\nTPC-C warehouses", default=100, type=int)
+
+        # Namespace
+        namespace = typer.prompt("\nKubernetes namespace", default="hammerdb")
+
+        # Pure Storage
+        storage_metrics = None
+        enable_pure = typer.confirm("\nEnable Pure Storage metrics?", default=False)
+        if enable_pure:
+            pure_host = typer.prompt("  FlashArray host/IP")
+            pure_token = typer.prompt("  API token", hide_input=True)
+            storage_metrics = {
+                "enabled": True,
+                "provider": "pure",
+                "pure": {
+                    "host": pure_host,
+                    "api_token": pure_token,
+                    "volume": "",
+                    "poll_interval": 5,
+                    "verify_ssl": False,
+                    "api_version": "2.4",
+                },
+            }
+
+        config_yaml = _build_config_yaml(
+            name=name,
+            db_type_str=db_type_str,
+            benchmark_str=benchmark_str,
+            hosts=hosts,
+            username=username,
+            password=password,
+            oracle_config=oracle_config,
+            warehouses=warehouses,
+            namespace=namespace,
+            storage_metrics=storage_metrics,
+        )
 
     # Write YAML
     with open(output, "w") as f:

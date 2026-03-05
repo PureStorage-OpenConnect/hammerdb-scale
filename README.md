@@ -19,20 +19,22 @@ HammerDB-Scale runs **synchronized database performance tests across multiple da
 HammerDB-Scale is a CLI orchestrator that sits on your workstation and drives benchmarks through Kubernetes:
 
 ```
-                          ┌──────────────────────────────────────┐
-hammerdb-scale CLI        │         Kubernetes Cluster           │
-  (your machine)          │                                      │
-        │                 │   ┌─────────┐     ┌──────────────┐  │
-        │  helm install   │   │ HammerDB│────▶│ Database 1   │  │
-        ├────────────────▶│   │  Job 1  │     └──────────────┘  │
-        │                 │   ├─────────┤     ┌──────────────┐  │
-        │  kubectl logs   │   │ HammerDB│────▶│ Database 2   │  │
-        ├────────────────▶│   │  Job 2  │     └──────────────┘  │
-        │                 │   ├─────────┤     ┌──────────────┐  │
-        │  results/report │   │ HammerDB│────▶│ Database N   │  │
-        │                 │   │  Job N  │     └──────────────┘  │
-        │                 │   └─────────┘                       │
-        │                 └──────────────────────────────────────┘
+                         +--------------------------------------+
+                         |        Kubernetes Cluster            |
+hammerdb-scale CLI       |                                      |
+ (your machine)          |  +-----------+    +--------------+   |
+       |                 |  | HammerDB  |--->| Database 1   |   |
+       | helm install    |  | Job 1     |    +--------------+   |
+       |---------------->|  +-----------+                       |
+       |                 |  +-----------+    +--------------+   |
+       | kubectl logs    |  | HammerDB  |--->| Database 2   |   |
+       |---------------->|  | Job 2     |    +--------------+   |
+       |                 |  +-----------+                       |
+       | results/report  |  +-----------+    +--------------+   |
+       |                 |  | HammerDB  |--->| Database N   |   |
+       |                 |  | Job N     |    +--------------+   |
+       |                 |  +-----------+                       |
+       |                 +--------------------------------------+
 ```
 
 1. You define your database targets and benchmark parameters in a YAML config file
@@ -95,12 +97,12 @@ init  →  validate  →  run --build  →  results  →  report
 
 ## Documentation
 
-- [Configuration Reference](docs/CONFIGURATION.md) — YAML schema, target defaults, examples
-- [Usage Guide](docs/USAGE-GUIDE.md) — Command reference, results interpretation, troubleshooting
-- [Container Images](docs/CONTAINER-IMAGES.md) — Pre-built images, building your own, architecture
-- [Migration Guide (v1 to v2)](docs/MIGRATION.md) — Upgrading from shell-script version
-- [Security](docs/SECURITY.md) — Credential handling and network considerations
-- [Changelog](CHANGELOG.md)
+- [Configuration Reference](https://github.com/PureStorage-OpenConnect/hammerdb-scale/blob/main/docs/CONFIGURATION.md) — YAML schema, target defaults, examples
+- [Usage Guide](https://github.com/PureStorage-OpenConnect/hammerdb-scale/blob/main/docs/USAGE-GUIDE.md) — Command reference, results interpretation, troubleshooting
+- [Container Images](https://github.com/PureStorage-OpenConnect/hammerdb-scale/blob/main/docs/CONTAINER-IMAGES.md) — Pre-built images, building your own, architecture
+- [Migration Guide (v1 to v2)](https://github.com/PureStorage-OpenConnect/hammerdb-scale/blob/main/docs/MIGRATION.md) — Upgrading from shell-script version
+- [Security](https://github.com/PureStorage-OpenConnect/hammerdb-scale/blob/main/docs/SECURITY.md) — Credential handling and network considerations
+- [Changelog](https://github.com/PureStorage-OpenConnect/hammerdb-scale/blob/main/CHANGELOG.md)
 
 ## Requirements
 
@@ -116,7 +118,7 @@ init  →  validate  →  run --build  →  results  →  report
 
 ## Configuration
 
-See the [Configuration Reference](docs/CONFIGURATION.md) for the full schema. Minimal example:
+See the [Configuration Reference](https://github.com/PureStorage-OpenConnect/hammerdb-scale/blob/main/docs/CONFIGURATION.md) for the full schema. Minimal example:
 
 ```yaml
 name: my-benchmark
@@ -143,7 +145,7 @@ hammerdb:
     duration: 5
 ```
 
-Complete examples for all database/benchmark combinations are in the [examples/](examples/) directory.
+Complete examples for all database/benchmark combinations are in the [examples/](https://github.com/PureStorage-OpenConnect/hammerdb-scale/tree/main/examples) directory.
 
 ## Contributing
 
@@ -151,4 +153,4 @@ Contributions are welcome! Please [open an issue](https://github.com/PureStorage
 
 ## License
 
-[Apache 2.0](LICENSE)
+[Apache 2.0](https://github.com/PureStorage-OpenConnect/hammerdb-scale/blob/main/LICENSE)

@@ -217,7 +217,7 @@ def _config_snapshot(summary: dict) -> str:
 
 
 def _footer_html(summary: dict) -> str:
-    version = summary.get("version", "2.0.0")
+    version = summary.get("version", "2.0.1")
     test_id = summary.get("test_id", "")
     ts = summary.get("timestamp", "")
     try:

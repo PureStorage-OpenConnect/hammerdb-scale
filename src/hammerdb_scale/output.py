@@ -24,4 +24,4 @@ def print_info(msg: str) -> None:
 
 def print_banner(name: str, benchmark: str, target_count: int, detail: str) -> None:
     text = f"{name} | {benchmark} | {target_count} targets | {detail}"
-    console.print(Panel(text, title="HammerDB-Scale 2.0.0"))
+    console.print(Panel(text, title="HammerDB-Scale 2.0.1"))

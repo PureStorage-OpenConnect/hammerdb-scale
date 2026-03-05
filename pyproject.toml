@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hammerdb-scale"
-version = "2.0.0"
+version = "2.0.1"
 description = "CLI for orchestrating parallel HammerDB database benchmarks at scale on Kubernetes"
 readme = {file = "README.md", content-type = "text/markdown"}
 license = "Apache-2.0"

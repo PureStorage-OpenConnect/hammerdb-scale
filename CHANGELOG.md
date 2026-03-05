@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.0.1] - 2026-03-05
+
+### Added
+- `hammerdb-scale init --interactive` (`-i`) guided configuration wizard with Rich UI
+  - 6-step flow: Deployment, Database & Benchmark, Targets, Credentials, Benchmark Parameters, Infrastructure
+  - Numbered selection menus for database type and benchmark
+  - Optional advanced options (VUs, rampup, duration, pod resources)
+  - Configuration summary table with confirmation before writing
+  - Input validation and Ctrl+C handling
+
+### Fixed
+- README.md documentation links broken on PyPI — relative paths like `docs/CONFIGURATION.md` resolved against `pypi.org` instead of GitHub. Converted all links to absolute GitHub URLs.
+
 ## [2.0.0] - 2026-03-01
 
 ### Added
