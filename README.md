@@ -1,10 +1,14 @@
-# HammerDB Scale
+# HammerDB-Scale
 
-A Kubernetes orchestrator for parallel HammerDB testing designed to validate storage platform performance at scale.
+[![PyPI version](https://img.shields.io/pypi/v/hammerdb-scale)](https://pypi.org/project/hammerdb-scale/)
+[![Python versions](https://img.shields.io/pypi/pyversions/hammerdb-scale)](https://pypi.org/project/hammerdb-scale/)
+[![License](https://img.shields.io/pypi/l/hammerdb-scale)](LICENSE)
 
-## What is HammerDB Scale?
+A Python CLI for orchestrating parallel HammerDB database benchmarks at scale on Kubernetes.
 
-HammerDB Scale runs **synchronized database performance tests across multiple database instances simultaneously**. This is particularly valuable for:
+## What is HammerDB-Scale?
+
+HammerDB-Scale runs **synchronized database performance tests across multiple database instances simultaneously**. It deploys HammerDB as Kubernetes Jobs targeting multiple databases in parallel, making it ideal for:
 
 - **Storage Platform Testing**: Validate storage array performance under realistic multi-database workloads
 - **Scale Testing**: Test how storage performs when serving 2, 4, 8+ databases concurrently
@@ -12,146 +16,139 @@ HammerDB Scale runs **synchronized database performance tests across multiple da
 
 ## How It Works
 
+HammerDB-Scale is a CLI orchestrator that sits on your workstation and drives benchmarks through Kubernetes:
+
 ```
-Storage Platform (SAN/NAS/Cloud)
-         |
-    ┌────┴────┬────────┬────────┐
-    │         │        │        │
-  DB-01    DB-02    DB-03    DB-04  ← Multiple database instances
-    │         │        │        │
-    └────┬────┴────────┴────────┘
-         │
-  HammerDB Scale (Kubernetes Jobs)
-    Parallel TPC-C/TPC-H Tests
+                          ┌──────────────────────────────────────┐
+hammerdb-scale CLI        │         Kubernetes Cluster           │
+  (your machine)          │                                      │
+        │                 │   ┌─────────┐     ┌──────────────┐  │
+        │  helm install   │   │ HammerDB│────▶│ Database 1   │  │
+        ├────────────────▶│   │  Job 1  │     └──────────────┘  │
+        │                 │   ├─────────┤     ┌──────────────┐  │
+        │  kubectl logs   │   │ HammerDB│────▶│ Database 2   │  │
+        ├────────────────▶│   │  Job 2  │     └──────────────┘  │
+        │                 │   ├─────────┤     ┌──────────────┐  │
+        │  results/report │   │ HammerDB│────▶│ Database N   │  │
+        │                 │   │  Job N  │     └──────────────┘  │
+        │                 │   └─────────┘                       │
+        │                 └──────────────────────────────────────┘
 ```
 
-Each database gets its own Kubernetes job running HammerDB, all starting simultaneously to create realistic storage load patterns.
-
-## Features
-
-- **Parallel Execution**: Test multiple databases simultaneously
-- **Simple Design**: One Kubernetes job per database target
-- **Helm Deployment**: Simple configuration and management
-- **Storage Metrics**: Optional Pure Storage FlashArray monitoring
-- **Result Aggregation**: Automatic collection and summarization
-
-## Supported Databases
-
-| Database | Status | Image |
-|----------|--------|-------|
-| **SQL Server** | Ready | `sillidata/hammerdb-scale:latest` |
-| **Oracle** | Ready | Build `Dockerfile.oracle` ([setup guide](docs/databases/ORACLE-SETUP.md)) |
-| PostgreSQL | Planned | - |
-| MySQL | Planned | - |
+1. You define your database targets and benchmark parameters in a YAML config file
+2. The CLI translates your config into Helm values and deploys one Kubernetes Job per database target
+3. Each Job runs a HammerDB container that connects to its assigned database and executes the benchmark
+4. All Jobs run in parallel, producing synchronized load across all targets
+5. The CLI collects results from Job logs, aggregates metrics (TPM/NOPM for TPC-C, QphH for TPC-H), and generates an HTML scorecard
 
 ## Quick Start
 
-### 1. Configure targets in `values.yaml`
-
-```yaml
-targets:
-  - name: sqlserver-01
-    type: mssql
-    host: "sqlserver1.example.com"
-    username: sa
-    password: "YourPassword"
-    tprocc:
-      databaseName: tpcc
-```
-
-### 2. Build schemas
-
 ```bash
-./deploy-test.sh --phase build --test-id test-001 --benchmark tprocc
-kubectl logs -n default -l hammerdb.io/phase=build --follow
+# Install
+pip install hammerdb-scale
+
+# Generate config interactively
+hammerdb-scale init
+
+# Validate config and database connectivity
+hammerdb-scale validate
+
+# Build schema, run benchmark, collect results
+hammerdb-scale run --build --wait
+hammerdb-scale results
+hammerdb-scale report --open
 ```
 
-### 3. Run load test
+## Supported Databases
 
-```bash
-helm uninstall build-test-001
-./deploy-test.sh --phase load --test-id test-001 --benchmark tprocc
-kubectl logs -n default -l hammerdb.io/phase=load --follow
-```
+| Database | Benchmarks | Container Image |
+|----------|-----------|-----------------|
+| **SQL Server** | TPC-C, TPC-H | `sillidata/hammerdb-scale:latest` |
+| **Oracle** | TPC-C, TPC-H | `sillidata/hammerdb-scale-oracle:latest` |
 
-### 4. Aggregate results
-
-```bash
-./aggregate-results.sh --phase load --test-id test-001
-cat ./results/test-001/load/summary.txt
-```
-
-## Docker Images
+## Workflow
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  sillidata/hammerdb-scale:latest (PUBLIC)                   │
-│  ✓ SQL Server, PostgreSQL, MySQL drivers                    │
-│  ✓ All TCL scripts and Pure Storage collector               │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                    docker build -f Dockerfile.oracle
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│  myregistry/hammerdb-scale-oracle:latest (USER BUILDS)      │
-│  + Oracle Instant Client 21.11                             │
-└─────────────────────────────────────────────────────────────┘
+init  →  validate  →  run --build  →  results  →  report
+ │          │             │              │           │
+ │          │             │              │           └─ HTML scorecard
+ │          │             │              └─ aggregate TPM/NOPM/QphH
+ │          │             └─ build schema + run benchmark (parallel K8s jobs)
+ │          └─ check config, helm, kubectl, DB connectivity
+ └─ generate config interactively
 ```
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `version` | Show CLI, Python, helm, kubectl versions |
+| `init` | Generate config file interactively |
+| `validate` | Validate config, prerequisites, and connectivity |
+| `build` | Create benchmark schema on database targets |
+| `run` | Execute benchmark workload (`--build` for combined) |
+| `status` | Show job status with `--watch` for live updates |
+| `logs` | View HammerDB output logs |
+| `results` | Aggregate and display benchmark results |
+| `report` | Generate self-contained HTML scorecard |
+| `clean` | Remove K8s resources and/or database tables |
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
-| [Configuration Guide](docs/CONFIGURATION.md) | All values.yaml options |
-| [Usage Guide](docs/USAGE-GUIDE.md) | Workflows and troubleshooting |
-| [Oracle Setup](docs/databases/ORACLE-SETUP.md) | Building Oracle-enabled images |
-| [Adding Databases](docs/ADDING-DATABASES.md) | Extend to PostgreSQL, MySQL |
-| [Changelog](CHANGELOG.md) | Version history |
+- [Configuration Reference](docs/CONFIGURATION.md) — YAML schema, target defaults, examples
+- [Usage Guide](docs/USAGE-GUIDE.md) — Command reference, results interpretation, troubleshooting
+- [Container Images](docs/CONTAINER-IMAGES.md) — Pre-built images, building your own, architecture
+- [Migration Guide (v1 to v2)](docs/MIGRATION.md) — Upgrading from shell-script version
+- [Security](docs/SECURITY.md) — Credential handling and network considerations
+- [Changelog](CHANGELOG.md)
 
-## Project Structure
+## Requirements
 
+- **Python 3.10+**
+- **Helm 3.x** — used to template and deploy Kubernetes Jobs
+- **kubectl** — configured with a context that has access to your cluster
+- **Kubernetes cluster** — with permissions to create Jobs and Namespaces
+- **Database targets** — one or more Oracle or SQL Server instances reachable from the cluster
+
+### Optional
+
+- [pipx](https://pipx.pypa.io/) — recommended for installing CLI tools in isolated environments: `pipx install hammerdb-scale`
+
+## Configuration
+
+See the [Configuration Reference](docs/CONFIGURATION.md) for the full schema. Minimal example:
+
+```yaml
+name: my-benchmark
+default_benchmark: tprocc
+
+targets:
+  defaults:
+    type: mssql
+    username: sa
+    password: "YourPassword"
+    mssql: {}
+  hosts:
+    - name: sql-01
+      host: sql-01.example.com
+    - name: sql-02
+      host: sql-02.example.com
+
+hammerdb:
+  tprocc:
+    warehouses: 100
+    load_virtual_users: 4
+    driver: timed
+    rampup: 2
+    duration: 5
 ```
-hammerdb-scale/
-├── Chart.yaml              # Helm chart metadata
-├── values.yaml             # Configuration
-├── CHANGELOG.md            # Version history
-├── Dockerfile              # Base image (SQL Server)
-├── Dockerfile.oracle       # Oracle extension
-├── templates/              # Helm templates
-├── scripts/                # HammerDB TCL scripts
-├── examples/               # Example configurations
-└── docs/                   # Documentation
-```
 
-## Quick Reference
-
-```bash
-# Deploy
-./deploy-test.sh --phase build --test-id test-001 --benchmark tprocc
-./deploy-test.sh --phase load --test-id test-001 --benchmark tprocc
-
-# Monitor
-kubectl get jobs -n hammerdb-scale -w
-kubectl logs -n hammerdb-scale -l hammerdb.io/phase=load --follow
-
-# Results
-./aggregate-results.sh --phase load --test-id test-001
-
-# Cleanup
-helm uninstall load-test-001 -n hammerdb-scale
-```
+Complete examples for all database/benchmark combinations are in the [examples/](examples/) directory.
 
 ## Contributing
 
-Contributions welcome! Especially:
-- PostgreSQL implementation
-- MySQL/MariaDB implementation
-- Additional monitoring features
+Contributions are welcome! Please [open an issue](https://github.com/PureStorage-OpenConnect/hammerdb-scale/issues) to report bugs or request features.
 
 ## License
 
-Same as HammerDB project.
-
-## Credits
-
-Built on [HammerDB](https://www.hammerdb.com) by Steve Shaw.
+[Apache 2.0](LICENSE)

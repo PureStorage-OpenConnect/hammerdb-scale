@@ -1,52 +1,59 @@
-# Oracle TPC-H Test Scenario
-# Minimal configuration for quick testing
-
-testRun:
-  id: "test-oracle-tproch"
-  phase: "build"  # Will be overridden by test script
-  benchmark: "tproch"
+# HammerDB-Scale — Oracle TPC-H Example
+name: oracle-tproch
+description: "Oracle TPC-H benchmark across 4 targets"
+default_benchmark: tproch
 
 targets:
-  - name: oracle-server-01
+  defaults:
     type: oracle
-    host: "oracle-server.example.com"
     username: system
-    password: "changeme"
+    password: "YourPassword"
+    image:
+      repository: sillidata/hammerdb-scale-oracle
+      tag: latest
+      pull_policy: Always
+    oracle:
+      service: "ORCLPDB"
+      port: 1521
+      tablespace: "TPCC"
+      temp_tablespace: "TEMP"
+      tprocc:
+        user: "TPCC"
+        password: "YourSchemaPassword"
+      tproch:
+        user: "tpch"
+        password: "YourSchemaPassword"
+        degree_of_parallel: 8
+
+  hosts:
+    - name: ora-01
+      host: "oracle-01.example.com"
+    - name: ora-02
+      host: "oracle-02.example.com"
+    - name: ora-03
+      host: "oracle-03.example.com"
+    - name: ora-04
+      host: "oracle-04.example.com"
 
 hammerdb:
   tproch:
-    scaleFactor: 1          # Minimal 1GB for testing
-    buildThreads: 2         # Fast build
-    build_num_vu: 1         # HammerDB orchestrator
-    load_num_vu: 1          # Power run (single stream)
-    totalQuerysets: 1       # Single query set
+    scale_factor: 10
+    build_threads: 8
+    build_virtual_users: 8
+    load_virtual_users: 8
+    total_querysets: 1
 
-databases:
-  oracle:
-    driver: oracle
-    port: 1521
-    service: "ORCL"
-    tablespace: "TPCH"
-    tempTablespace: "TEMP"
-    tprocc:
-      user: "tpcc"
-    tproch:
-      user: "tpch"
-      degreeOfParallel: 2
+resources:
+  requests:
+    memory: "4Gi"
+    cpu: "4"
+  limits:
+    memory: "8Gi"
+    cpu: "8"
 
-global:
-  image:
-    repository: localhost/hammerdb-scale-oracle-test
-    tag: latest
-    pullPolicy: Never
+kubernetes:
+  namespace: hammerdb
+  job_ttl: 86400
 
-  resources:
-    requests:
-      memory: "2Gi"
-      cpu: "1"
-    limits:
-      memory: "4Gi"
-      cpu: "2"
-
-pureStorage:
+storage_metrics:
   enabled: false

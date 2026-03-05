@@ -1,0 +1,63 @@
+name: oracle-scale-test
+description: "4x Oracle TPC-C"
+default_benchmark: tprocc
+
+targets:
+  defaults:
+    type: oracle
+    username: system
+    password: "change_me"
+    image:
+      repository: sillidata/hammerdb-scale-oracle
+      tag: latest
+      pull_policy: Always
+    oracle:
+      service: "ORCLPDB"
+      port: 1521
+      tablespace: "TPCC"
+      temp_tablespace: "TEMP"
+      tprocc:
+        user: "TPCC"
+        password: "change_me"
+      tproch:
+        user: "tpch"
+        password: "change_me"
+        degree_of_parallel: 8
+
+  hosts:
+    - name: ora-01
+      host: "oracle-01.example.com"
+    - name: ora-02
+      host: "Oracle-Bench-02.example.com"
+    - name: ora-03
+      host: "Oracle-Bench-03.example.com"
+    - name: ora-04
+      host: "Oracle-Bench-04.example.com"
+
+hammerdb:
+  tprocc:
+    warehouses: 1000
+    build_virtual_users: 32
+    load_virtual_users: 200
+    driver: timed
+    rampup: 15
+    duration: 35
+    total_iterations: 10000000
+    all_warehouses: true
+    checkpoint: true
+    time_profile: false
+
+resources:
+  requests:
+    memory: "4Gi"
+    cpu: "4"
+  limits:
+    memory: "8Gi"
+    cpu: "8"
+
+kubernetes:
+  namespace: hammerdb
+  job_ttl: 86400
+
+storage_metrics:
+  enabled: false

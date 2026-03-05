@@ -1,0 +1,26 @@
+Hammerdb Log @ Thu Jan 01 12:00:00 UTC 2026
+Vuser 1:RUNNING
+Query 1: 12.5 seconds
+Query 2: 8.3 seconds
+Query 3: 45.1 seconds
+Query 4: 22.7 seconds
+Query 5: 15.2 seconds
+Query 6: 3.8 seconds
+Query 7: 9.1 seconds
+Query 8: 18.4 seconds
+Query 9: 33.6 seconds
+Query 10: 7.9 seconds
+Query 11: 5.2 seconds
+Query 12: 11.8 seconds
+Query 13: 14.3 seconds
+Query 14: 6.7 seconds
+Query 15: 19.5 seconds
+Query 16: 8.9 seconds
+Query 17: 12.1 seconds
+Query 18: 25.3 seconds
+Query 19: 16.7 seconds
+Query 20: 9.4 seconds
+Query 21: 7.2 seconds
+Query 22: 4.6 seconds
+QphH@1: 1523.45
+Vuser 1:FINISHED SUCCESS

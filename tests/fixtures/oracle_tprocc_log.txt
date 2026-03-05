@@ -1,0 +1,12 @@
+Hammerdb Log @ Thu Jan 01 12:00:00 UTC 2026
+Vuser 1 created - Loss of Workers
+Vuser 1:RUNNING
+Vuser 1:Processing 2 transactions with output suppressed...
+Vuser 1:complete
+Vuser 1:FINISHED SUCCESS
+TEST RESULT : System achieved 120543 Oracle NOPM from 275312 Oracle TPM
+Vuser 1:RUNNING
+Vuser 1:Processing 2 transactions with output suppressed...
+Vuser 1:complete
+Vuser 1:FINISHED SUCCESS
+TEST RESULT : System achieved 125890 Oracle NOPM from 287654 Oracle TPM

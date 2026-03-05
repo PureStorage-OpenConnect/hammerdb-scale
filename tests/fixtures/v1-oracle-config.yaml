@@ -1,0 +1,57 @@
+# Oracle TPC-C Test Scenario
+# Minimal configuration for quick testing
+
+testRun:
+  id: "test-oracle-tprocc"
+  phase: "build"  # Will be overridden by test script
+  benchmark: "tprocc"
+
+targets:
+  - name: oracle-server-01
+    type: oracle
+    host: "oracle-server.example.com"
+    username: system
+    password: "changeme"
+
+hammerdb:
+  tprocc:
+    warehouses: 1           # Minimal for testing
+    build_num_vu: 2         # Fast build
+    load_num_vu: 2          # Minimal load
+    driver: timed
+    rampup: 1               # 1 minute ramp
+    duration: 1             # 1 minute test
+    total_iterations: 10000000
+    allwarehouse: true
+    checkpoint: false
+    timeprofile: false
+
+databases:
+  oracle:
+    driver: oracle
+    port: 1521
+    service: "ORCL"
+    tablespace: "TPCC"
+    tempTablespace: "TEMP"
+    tprocc:
+      user: "tpcc"
+    tproch:
+      user: "tpch"
+      degreeOfParallel: 2
+
+global:
+  image:
+    repository: localhost/hammerdb-scale-oracle-test
+    tag: latest
+    pullPolicy: Never
+
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "1"
+    limits:
+      memory: "4Gi"
+      cpu: "2"
+
+pureStorage:
+  enabled: false

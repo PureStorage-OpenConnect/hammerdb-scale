@@ -333,9 +333,22 @@ if [[ "$RUN_MODE" == "load" ]] && [ $EXIT_CODE -eq 0 ]; then
     fi
 fi
 
-# Wait for Pure Storage collector to finish if it was started
+# Stop Pure Storage collector gracefully now that the benchmark is done
 if [[ -n "$PURE_PID" ]]; then
-    log "Waiting for Pure Storage metrics collector to complete..."
+    if kill -0 $PURE_PID 2>/dev/null; then
+        log "Benchmark finished — sending SIGTERM to Pure Storage collector (PID: $PURE_PID)"
+        kill -TERM $PURE_PID 2>/dev/null
+        # Give it up to 10 seconds to save results and exit
+        for i in $(seq 1 10); do
+            kill -0 $PURE_PID 2>/dev/null || break
+            sleep 1
+        done
+        # Force kill if still running
+        if kill -0 $PURE_PID 2>/dev/null; then
+            log "WARNING: Collector still running after 10s — force killing"
+            kill -9 $PURE_PID 2>/dev/null
+        fi
+    fi
     wait $PURE_PID 2>/dev/null
     PURE_EXIT=$?
     if [ $PURE_EXIT -eq 0 ]; then
@@ -346,6 +359,13 @@ if [[ -n "$PURE_PID" ]]; then
             log "=== Pure Storage Metrics Summary ==="
             cat "${TMPDIR}/pure_metrics.log"
             log "===================================="
+        fi
+
+        # Emit the JSON data to stdout with delimiters so the CLI can extract it from logs
+        if [ -f "${PURE_OUTPUT:-/tmp/pure_metrics.json}" ]; then
+            echo ">>>PURE_METRICS_JSON_START<<<"
+            cat "${PURE_OUTPUT:-/tmp/pure_metrics.json}"
+            echo ">>>PURE_METRICS_JSON_END<<<"
         fi
     else
         log "WARNING: Pure Storage metrics collector exited with code $PURE_EXIT"

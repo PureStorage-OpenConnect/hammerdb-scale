@@ -1,0 +1,28 @@
+{{- $hasMssql := false -}}
+{{- range .Values.targets -}}
+  {{- if eq .type "mssql" -}}
+    {{- $hasMssql = true -}}
+  {{- end -}}
+{{- end -}}
+{{- if $hasMssql }}
+# ConfigMap for SQL Server (MSSQL) Scripts
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "hammerdb-scale-test.fullname" . }}-scripts-mssql
+  labels:
+    {{- include "hammerdb-scale-test.labels" . | nindent 4 }}
+    hammerdb.io/database-type: mssql
+data:
+  # HammerDB TCL scripts
+  {{- range $path, $_ := .Files.Glob "scripts/mssql/*.tcl" }}
+  {{ base $path }}: |-
+{{ $.Files.Get $path | indent 4 }}
+  {{- end }}
+
+  # Pure Storage metrics collector
+  {{- if .Values.pureStorage.enabled }}
+  collect_pure_metrics.py: |-
+{{ .Files.Get "scripts/collect_pure_metrics.py" | indent 4 }}
+  {{- end }}
+{{- end }}
