@@ -1,0 +1,19 @@
+apiVersion: v2
+name: hammerdb-scale
+description: Modular Helm chart for parallel HammerDB scale testing across multiple databases (SQL Server, PostgreSQL, Oracle, MySQL)
+type: application
+version: 1.1.0
+appVersion: "5.0"
+keywords:
+  - hammerdb
+  - benchmark
+  - tpc-c
+  - tpc-h
+  - sql-server
+  - postgresql
+  - oracle
+  - mysql
+  - load-testing
+  - performance
+maintainers:
+  - name: Silli, Nocentino

@@ -1,0 +1,63 @@
+name: mssql-scale-test
+description: "4x MSSQL TPC-C"
+default_benchmark: tprocc
+
+targets:
+  defaults:
+    type: mssql
+    username: sa
+    password: "change_me"
+    image:
+      repository: sillidata/hammerdb-scale
+      tag: latest
+      pull_policy: Always
+    mssql:
+      port: 1433
+      connection:
+        tcp: true
+        authentication: sql
+        odbc_driver: "ODBC Driver 18 for SQL Server"
+        encrypt_connection: true
+        trust_server_cert: true
+      tprocc:
+        database_name: tpcc
+      tproch:
+        database_name: tpch
+
+  hosts:
+    - name: sql-01
+      host: "sql-01.customer.local"
+    - name: sql-02
+      host: "sql-02.customer.local"
+    - name: sql-03
+      host: "sql-03.customer.local"
+    - name: sql-04
+      host: "sql-04.customer.local"
+
+hammerdb:
+  tprocc:
+    warehouses: 500
+    build_virtual_users: 16
+    load_virtual_users: 100
+    driver: timed
+    rampup: 10
+    duration: 20
+    total_iterations: 10000000
+    all_warehouses: true
+    checkpoint: true
+    time_profile: false
+
+resources:
+  requests:
+    memory: "4Gi"
+    cpu: "4"
+  limits:
+    memory: "8Gi"
+    cpu: "8"
+
+kubernetes:
+  namespace: hammerdb
+  job_ttl: 86400
+
+storage_metrics:
+  enabled: false

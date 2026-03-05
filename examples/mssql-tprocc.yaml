@@ -1,59 +1,64 @@
-# SQL Server TPC-C Test Scenario
-# Minimal configuration for quick testing
-
-testRun:
-  id: "test-mssql-tprocc"
-  phase: "build"  # Will be overridden by test script
-  benchmark: "tprocc"
+# HammerDB-Scale — SQL Server TPC-C Example
+name: mssql-tprocc
+description: "SQL Server TPC-C benchmark across 4 targets"
+default_benchmark: tprocc
 
 targets:
-  - name: sql-server-01
+  defaults:
     type: mssql
-    host: "sql-server.example.com"
     username: sa
-    password: "changeme"
-    tprocc:
-      databaseName: tpcc
-    tproch:
-      databaseName: tpch
+    password: "YourPassword"
+    image:
+      repository: sillidata/hammerdb-scale-mssql
+      tag: latest
+      pull_policy: Always
+    mssql:
+      port: 1433
+      connection:
+        tcp: true
+        authentication: sql
+        odbc_driver: "ODBC Driver 18 for SQL Server"
+        encrypt_connection: true
+        trust_server_cert: true
+      tprocc:
+        database_name: tpcc
+      tproch:
+        database_name: tpch
+
+  hosts:
+    - name: sql-01
+      host: "sql-01.example.com"
+    - name: sql-02
+      host: "sql-02.example.com"
+    - name: sql-03
+      host: "sql-03.example.com"
+    - name: sql-04
+      host: "sql-04.example.com"
 
 hammerdb:
-  connection:
-    tcp: true
-    port: 1433
-    azure: false
-    authentication: sql
-    odbc_driver: "ODBC Driver 18 for SQL Server"
-    linux_odbc: "ODBC Driver 18 for SQL Server"
-    encrypt_connection: true
-    trust_server_cert: true
-
   tprocc:
-    warehouses: 1           # Minimal for testing
-    build_num_vu: 2         # Fast build
-    load_num_vu: 2          # Minimal load
-    use_bcp: false
+    warehouses: 500
+    build_virtual_users: 16
+    load_virtual_users: 100
     driver: timed
-    rampup: 1               # 1 minute ramp
-    duration: 1             # 1 minute test
+    rampup: 10
+    duration: 20
     total_iterations: 10000000
-    allwarehouse: true
-    checkpoint: false       # Skip checkpoint for speed
-    timeprofile: false
+    all_warehouses: true
+    checkpoint: true
+    time_profile: false
 
-global:
-  image:
-    repository: localhost/hammerdb-scale-test
-    tag: latest
-    pullPolicy: Never       # Use local image
+resources:
+  requests:
+    memory: "4Gi"
+    cpu: "4"
+  limits:
+    memory: "8Gi"
+    cpu: "8"
 
-  resources:
-    requests:
-      memory: "2Gi"
-      cpu: "1"
-    limits:
-      memory: "4Gi"
-      cpu: "2"
+kubernetes:
+  namespace: hammerdb
+  job_ttl: 86400
 
-pureStorage:
+storage_metrics:
   enabled: false
