@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-VERSION = "2.0.1"
+VERSION = "2.0.2"
 
 DEFAULT_CONFIG_FILENAMES = ["hammerdb-scale.yaml", "hammerdb-scale.yml"]
 CONFIG_ENV_VAR = "HAMMERDB_SCALE_CONFIG"

@@ -2,7 +2,7 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/hammerdb-scale)](https://pypi.org/project/hammerdb-scale/)
 [![Python versions](https://img.shields.io/pypi/pyversions/hammerdb-scale)](https://pypi.org/project/hammerdb-scale/)
-[![License](https://img.shields.io/pypi/l/hammerdb-scale)](LICENSE)
+[![License](https://img.shields.io/pypi/l/hammerdb-scale)](https://github.com/PureStorage-OpenConnect/hammerdb-scale/blob/main/LICENSE)
 
 A Python CLI for orchestrating parallel HammerDB database benchmarks at scale on Kubernetes.
 

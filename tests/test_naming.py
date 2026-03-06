@@ -34,6 +34,16 @@ def test_run_hash_different_inputs():
     assert h1 != h2
 
 
+def test_run_hash_starts_with_letter():
+    """Hash must start with a letter to avoid YAML scientific notation parsing.
+
+    e.g. '764303e9' looks like 7.64303e+9 to YAML 1.1 parsers.
+    """
+    for i in range(100):
+        h = generate_run_hash(f"app-{i}", f"app-{i}-20260101-{i:04d}")
+        assert h[0].isalpha(), f"Hash {h!r} starts with a digit"
+
+
 def test_job_name_format():
     name = generate_job_name("run", 3, "a1b2c3d4")
     assert name == "hdb-run-03-a1b2c3d4"

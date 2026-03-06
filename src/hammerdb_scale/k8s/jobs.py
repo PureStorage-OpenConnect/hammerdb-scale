@@ -135,8 +135,8 @@ def resolve_test_id(
     if cli_id:
         return cli_id
 
-    # Try K8s
-    k8s_id = _find_most_recent_k8s_test_id(namespace)
+    # Try K8s — filter by deployment_name if a config was provided
+    k8s_id = _find_most_recent_k8s_test_id(namespace, deployment_name)
     if k8s_id:
         return k8s_id
 
@@ -155,8 +155,15 @@ def resolve_test_id(
     raise NoResultsError("No test runs found in K8s or local results directory.")
 
 
-def _find_most_recent_k8s_test_id(namespace: str) -> str | None:
-    """Find the most recent test ID from Helm releases."""
+def _find_most_recent_k8s_test_id(
+    namespace: str, deployment_name: str | None = None
+) -> str | None:
+    """Find the most recent test ID from Helm releases.
+
+    When deployment_name is provided (i.e. a config file was given),
+    only return a test ID that belongs to that deployment.  This prevents
+    a running job from a *different* config from shadowing stored results.
+    """
     try:
         releases = helm_list(namespace)
         if not releases:
@@ -187,6 +194,10 @@ def _find_most_recent_k8s_test_id(namespace: str) -> str | None:
                     labels = items[0].get("metadata", {}).get("labels", {})
                     test_id = labels.get("hammerdb.io/test-id")
                     if test_id:
+                        if deployment_name and not test_id.startswith(
+                            deployment_name + "-"
+                        ):
+                            continue
                         return test_id
             except (KubectlError, json.JSONDecodeError):
                 continue
