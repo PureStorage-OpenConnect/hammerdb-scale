@@ -9,9 +9,20 @@ from hammerdb_scale.constants import NAMING_PREFIX, VERSION
 
 
 def generate_run_hash(deployment_name: str, test_id: str) -> str:
-    """Deterministic 8-char hash for job naming."""
+    """Deterministic 8-char hash for job naming.
+
+    Always starts with a letter to prevent YAML parsers from
+    interpreting hex strings like '764303e9' as scientific notation.
+    """
     raw = f"{deployment_name}-{test_id}"
-    return hashlib.sha256(raw.encode()).hexdigest()[:8]
+    digest = hashlib.sha256(raw.encode()).hexdigest()
+    # Find first 8-char window starting with a letter
+    for i in range(len(digest) - 7):
+        candidate = digest[i : i + 8]
+        if candidate[0].isalpha():
+            return candidate
+    # Fallback: prefix with 'a', take 7 hex chars
+    return "a" + digest[:7]
 
 
 def generate_job_name(phase: str, target_index: int, run_hash: str) -> str:
