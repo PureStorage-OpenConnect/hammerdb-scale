@@ -17,6 +17,10 @@ Please [open an issue](https://github.com/PureStorage-OpenConnect/hammerdb-scale
 git clone https://github.com/PureStorage-OpenConnect/hammerdb-scale.git
 cd hammerdb-scale
 
+# Create a virtualenv and activate it
+python -m venv venv
+source ./venv/bin/activate
+
 # Install in development mode with dev dependencies
 pip install -e ".[dev]"
 
